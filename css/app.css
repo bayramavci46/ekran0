@@ -120,6 +120,30 @@ select {
   color: inherit;
 }
 
+button {
+  touch-action: manipulation;
+}
+
+/* Video elements the preview draws from: in the page (Safari decodes only those) but invisible. */
+.media-sink {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0.01;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.media-sink video,
+.media-sink canvas {
+  display: block;
+  width: 2px;
+  height: 2px;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -430,6 +454,9 @@ kbd {
   position: absolute;
   cursor: move;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   outline: 1.5px dashed rgba(240, 167, 58, 0);
   outline-offset: 0;
   transition: outline-color 0.15s;
@@ -666,7 +693,9 @@ kbd {
   position: relative;
   touch-action: none;
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .tl.is-empty .tl-area {
@@ -1386,6 +1415,14 @@ input[type="number"] {
 
   .field-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* iPhone zooms into form fields with text under 16px; keep them at 16px on touch screens. */
+@media (pointer: coarse) {
+  select,
+  input[type="number"] {
+    font-size: 16px;
   }
 }
 

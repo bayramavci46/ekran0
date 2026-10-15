@@ -76,13 +76,15 @@
       this.camClip.addEventListener('keydown', (e) => this._key(e, 'offset'));
 
       this._width = 0;
-      new ResizeObserver(() => {
+      const onResize = () => {
         const w = this.area.clientWidth;
         if (w !== this._width) {
           this._width = w;
           this._renderRuler();
         }
-      }).observe(area);
+      };
+      if (typeof ResizeObserver === 'function') new ResizeObserver(onResize).observe(area);
+      else window.addEventListener('resize', onResize);
     }
 
     update(patch) {

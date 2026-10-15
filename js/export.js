@@ -442,99 +442,149 @@
 
   // ---- Real-time fallback --------------------------------------------------
 
-  function hiddenVideo(url) {
-    const v = document.createElement('video');
-    v.playsInline = true;
-    v.preload = 'auto';
-    v.src = url;
-    return v;
+  /** Media elements live in the page (a tiny invisible box): Safari only decodes frames for those. */
+  function mediaSink() {
+    let sink = document.getElementById('mediaSink');
+    if (!sink) {
+      sink = document.createElement('div');
+      sink.id = 'mediaSink';
+      sink.className = 'media-sink';
+      sink.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(sink);
+    }
+    return sink;
   }
 
-  function waitFor(target, event) {
+  /**
+   * Call this inside the export click, before anything async. Safari (and iPhone) only lets media
+   * play with sound later if it was started during a user gesture, and the same goes for resuming
+   * an AudioContext.
+   */
+  function prepareRealtime(job) {
+    const AC = root.AudioContext || root.webkitAudioContext;
+    const audioContext = new AC();
+    audioContext.resume().catch(() => {});
+    const sink = mediaSink();
+    const make = (url) => {
+      const v = document.createElement('video');
+      v.playsInline = true;
+      v.setAttribute('playsinline', '');
+      v.setAttribute('webkit-playsinline', '');
+      v.preload = 'auto';
+      v.src = url;
+      sink.appendChild(v);
+      const started = v.play();
+      if (started) started.catch(() => {});
+      v.pause();
+      return v;
+    };
+    return { audioContext, screen: make(job.screen.url), camera: job.camera ? make(job.camera.url) : null };
+  }
+
+  function disposeRealtime(kit) {
+    for (const v of [kit.screen, kit.camera]) {
+      if (!v) continue;
+      v.pause();
+      v.removeAttribute('src');
+      v.load();
+      v.remove();
+    }
+    if (kit.audioContext.state !== 'closed') kit.audioContext.close().catch(() => {});
+  }
+
+  /** Resolves when `event` fires, or after `ms` (playback loads the data on Safari anyway). */
+  function eventOrTimeout(target, event, ms) {
     return new Promise((resolve, reject) => {
-      const ok = () => { cleanup(); resolve(); };
-      const fail = () => { cleanup(); reject(new Error('Video yüklenemedi.')); };
+      let timer = 0;
       const cleanup = () => {
+        clearTimeout(timer);
         target.removeEventListener(event, ok);
         target.removeEventListener('error', fail);
       };
+      const ok = () => { cleanup(); resolve(); };
+      const fail = () => { cleanup(); reject(new Error('Video yüklenemedi.')); };
       target.addEventListener(event, ok);
       target.addEventListener('error', fail);
+      timer = setTimeout(ok, ms);
     });
   }
 
-  async function exportRealtime(job, chosen, { onProgress, signal, audioContext }) {
+  const whenLoaded = (v) => (v.readyState >= 2 ? Promise.resolve() : eventOrTimeout(v, 'loadeddata', 8000));
+
+  async function exportRealtime(job, chosen, { onProgress, signal, kit }) {
     const { width: W, height: H, fps } = job.output;
     const canvas = document.createElement('canvas');
     canvas.width = W;
     canvas.height = H;
+    mediaSink().appendChild(canvas);
     const ctx = canvas.getContext('2d', { alpha: false });
-    const sv = hiddenVideo(job.screen.url);
-    const cv = job.camera ? hiddenVideo(job.camera.url) : document.createElement('video');
-    const loads = [waitFor(sv, 'loadeddata')];
-    if (job.camera) loads.push(waitFor(cv, 'loadeddata'));
-    await Promise.all(loads);
-
-    const ac = audioContext;
-    await ac.resume();
-    const dest = ac.createMediaStreamDestination();
-    const route = (video, gain) => {
-      const src = ac.createMediaElementSource(video);
-      const g = ac.createGain();
-      g.gain.value = gain;
-      src.connect(g).connect(dest);
-    };
-    route(sv, job.gains.screen);
-    if (job.camera) route(cv, job.gains.camera);
-
-    const stream = canvas.captureStream(fps);
-    for (const track of dest.stream.getAudioTracks()) stream.addTrack(track);
-    const recorder = new MediaRecorder(stream, {
-      mimeType: chosen.mimeType,
-      videoBitsPerSecond: Math.round(W * H * fps * (REALTIME_BPP[job.output.quality] || REALTIME_BPP.high)),
-      audioBitsPerSecond: 192000,
-    });
-    const chunks = [];
-    recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-    const stopped = new Promise((resolve, reject) => {
-      recorder.onstop = resolve;
-      recorder.onerror = (e) => reject(e.error || new Error('Kayıt hatası.'));
-    });
-
-    const player = new PE.SyncPlayer(sv, cv);
-    player.hasScreen = true;
-    player.hasCamera = !!job.camera;
-    player.offset = job.offset;
-    player.trimStart = job.trimStart;
-    player.trimEnd = job.trimEnd;
-
-    const draw = () => {
-      const t = sv.currentTime;
-      const camOn = job.camera && player.cameraActiveAt(t) && cv.readyState >= 2;
-      PE.renderer.drawFrame(ctx, W, H, {
-        screen: { source: sv, width: sv.videoWidth, height: sv.videoHeight },
-        camera: camOn ? { source: cv, width: cv.videoWidth, height: cv.videoHeight } : null,
-        look: job.look,
-      });
-      onProgress((t - job.trimStart) / (job.trimEnd - job.trimStart));
-    };
-
-    player.seek(job.trimStart);
-    await waitFor(sv, 'seeked');
-    draw();
-
-    const onVisibility = () => {
-      // Hidden tabs stop drawing; pause the recording instead of saving frozen frames.
-      if (document.hidden && player.playing) {
-        player.pause();
-        recorder.pause();
-      } else if (!document.hidden && recorder.state === 'paused') {
-        recorder.resume();
-        player.play().catch(() => {});
-      }
-    };
+    const sv = kit.screen;
+    const cv = kit.camera || document.createElement('video');
+    const ac = kit.audioContext;
+    let recorder = null;
+    let onVisibility = null;
+    const player = new PE.SyncPlayer(sv, cv, { mutedFallback: false });
 
     try {
+      await Promise.all([whenLoaded(sv), kit.camera ? whenLoaded(cv) : null]);
+      await ac.resume();
+      const dest = ac.createMediaStreamDestination();
+      const route = (video, gain) => {
+        const src = ac.createMediaElementSource(video);
+        const g = ac.createGain();
+        g.gain.value = gain;
+        src.connect(g).connect(dest);
+      };
+      route(sv, job.gains.screen);
+      if (kit.camera) route(cv, job.gains.camera);
+
+      const stream = canvas.captureStream(fps);
+      for (const track of dest.stream.getAudioTracks()) stream.addTrack(track);
+      recorder = new MediaRecorder(stream, {
+        mimeType: chosen.mimeType,
+        videoBitsPerSecond: Math.round(W * H * fps * (REALTIME_BPP[job.output.quality] || REALTIME_BPP.high)),
+        audioBitsPerSecond: 192000,
+      });
+      const chunks = [];
+      recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      const stopped = new Promise((resolve, reject) => {
+        recorder.onstop = resolve;
+        recorder.onerror = (e) => reject(e.error || new Error('Kayıt hatası.'));
+      });
+
+      player.hasScreen = true;
+      player.hasCamera = !!kit.camera;
+      player.offset = job.offset;
+      player.trimStart = job.trimStart;
+      player.trimEnd = job.trimEnd;
+
+      const draw = () => {
+        const t = sv.currentTime;
+        const camOn = kit.camera && player.cameraActiveAt(t) && cv.readyState >= 2;
+        PE.renderer.drawFrame(ctx, W, H, {
+          screen: sv.readyState >= 2 ? { source: sv, width: sv.videoWidth, height: sv.videoHeight } : null,
+          camera: camOn ? { source: cv, width: cv.videoWidth, height: cv.videoHeight } : null,
+          look: job.look,
+        });
+        onProgress((t - job.trimStart) / (job.trimEnd - job.trimStart));
+      };
+
+      const seeked = eventOrTimeout(sv, 'seeked', 5000);
+      player.seek(job.trimStart);
+      await seeked;
+      draw();
+
+      onVisibility = () => {
+        // Hidden tabs stop drawing; pause the recording instead of saving frozen frames.
+        if (document.hidden && player.playing) {
+          player.pause();
+          recorder.pause();
+        } else if (!document.hidden && recorder.state === 'paused') {
+          recorder.resume();
+          player.play().catch(() => {});
+        }
+      };
+
       await new Promise((resolve, reject) => {
         const finish = () => {
           if (!player.playing && sv.currentTime >= job.trimEnd - 1 / fps) resolve();
@@ -552,19 +602,17 @@
       const raw = new Blob(chunks, { type: chosen.mimeType.split(';')[0] });
       return { blob: await remux(raw, chosen.container), container: chosen.container };
     } finally {
-      document.removeEventListener('visibilitychange', onVisibility);
+      if (onVisibility) document.removeEventListener('visibilitychange', onVisibility);
       player.pause();
-      if (recorder.state !== 'inactive') recorder.stop();
-      for (const v of [sv, cv]) {
-        v.removeAttribute('src');
-        v.load();
-      }
-      ac.close().catch(() => {});
+      if (recorder && recorder.state !== 'inactive') recorder.stop();
+      canvas.remove();
+      disposeRealtime(kit);
     }
   }
 
   PE.exporter = {
     getMediabunny, analyzeFile, detectFormats, plan, codecName,
-    memoryTarget, diskTarget, canPickFile, pickFile, exportFast, exportRealtime,
+    memoryTarget, diskTarget, canPickFile, pickFile, exportFast,
+    prepareRealtime, disposeRealtime, exportRealtime,
   };
 })(self);

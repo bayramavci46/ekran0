@@ -29,6 +29,9 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
   kopyalanabilir ve internet bağlantısı olmadan çalışır.
 - **Yerel sunucu ya da GitHub Pages:** depo kökünü olduğu gibi yayınlamanız yeterli
   (ör. `python3 -m http.server` → `http://localhost:8000`).
+- **iPhone ve iPad:** Dosyalar uygulamasından açılan HTML dosyası çalışmaz, uygulamayı bir web adresinden açın.
+  GitHub Pages bunun için yeterli: depo ayarlarında **Pages** bölümünde kaynak olarak `main` dalını ve `/ (root)`
+  klasörünü seçin; birkaç dakika sonra uygulama `https://<kullanıcı-adı>.github.io/<depo-adı>/` adresinde açılır.
 
 ## Kullanım
 
@@ -57,6 +60,9 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 ## Tarayıcı desteği
 
 - **Chrome ve Edge (Windows, macOS):** hızlı dışa aktarma, MP4 (H.264 + AAC). En iyi deneyim bunlarda.
+- **Safari (Mac, iPhone, iPad):** önizleme ve düzenleme çalışır. Yeni sürümlerde dışa aktarma da hızlı yöntemle yapılır;
+  eski sürümlerde video gerçek zamanlı oynatılarak MP4 olarak kaydedilir. iPhone ve iPad, önizlemede ses düzeyinin
+  değiştirilmesine izin vermez (yalnızca sesi kapatıp açabilirsiniz); seçtiğiniz düzey dışa aktarılan videoya uygulanır.
 - **Diğer tarayıcılar:** uygulama, tarayıcının kodlayabildiği biçimi kendisi seçer ve **Biçim** menüsünde gösterir
   (ör. WebM: VP9 + Opus). Hızlı yöntem kullanılamıyorsa video gerçek zamanlı oynatılarak kaydedilir; bu
   sırada sekme açık ve görünür kalmalıdır.

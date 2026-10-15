@@ -11,11 +11,24 @@
   'use strict';
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
+  /**
+   * Safari can refuse to play with sound when playback was not started by a click. For the
+   * preview it is better to keep the picture moving silently than to stall.
+   */
+  function playOrMute(el, mutedFallback) {
+    return el.play().catch((err) => {
+      if (!mutedFallback || !err || err.name !== 'NotAllowedError' || el.muted) throw err;
+      el.muted = true;
+      return el.play();
+    });
+  }
+
   class SyncPlayer extends EventTarget {
-    constructor(screenEl, cameraEl) {
+    constructor(screenEl, cameraEl, options = {}) {
       super();
       this.s = screenEl;
       this.c = cameraEl;
+      this.mutedFallback = options.mutedFallback !== false;
       this.offset = 0;
       this.trimStart = 0;
       this.trimEnd = 0;
@@ -63,9 +76,15 @@
       }
       this.playing = true;
       this._syncCamera(true);
+      if (this.hasCamera && this.c.paused) {
+        // Touch the camera inside this click so Safari lets it start with sound later on.
+        const started = this.c.play();
+        if (started) started.catch(() => {});
+        this.c.pause();
+      }
       this._emit('state');
       try {
-        await this.s.play();
+        await playOrMute(this.s, this.mutedFallback);
       } catch (err) {
         this.playing = false;
         this.c.pause();
@@ -133,7 +152,7 @@
       } else {
         c.playbackRate = 1;
       }
-      if (this.playing && c.paused) c.play().catch(() => {});
+      if (this.playing && c.paused) playOrMute(c, this.mutedFallback).catch(() => {});
       if (!this.playing && !c.paused) c.pause();
     }
 

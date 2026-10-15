@@ -59,7 +59,7 @@
     progressText: $('progressText'), cancel: $('cancelBtn'),
     result: $('exportResult'), resultVideo: $('resultVideo'), resultText: $('resultText'),
     download: $('downloadBtn'), closeResult: $('closeResultBtn'),
-    exportError: $('exportError'), retryRealtime: $('retryRealtimeBtn'),
+    exportError: $('exportError'), retryRealtime: $('retryRealtimeBtn'), volumeNote: $('volumeNote'),
   };
   const videos = { screen: $('screenVideo'), camera: $('cameraVideo') };
   const ctx = els.canvas.getContext('2d', { alpha: false });
@@ -88,6 +88,13 @@
   }
 
   const gain = (a) => (a.muted ? 0 : a.volume);
+
+  // iPhone and iPad keep media volume at 100 % (only muting works), so the preview cannot follow the sliders.
+  const volumeLocked = (() => {
+    const probe = document.createElement('video');
+    probe.volume = 0.5;
+    return probe.volume !== 0.5;
+  })();
 
   /** The container to export: the user's choice, or the first one this browser encodes fast. */
   function formatId() {
@@ -343,39 +350,67 @@
     });
   }
 
+  /** Plays a muted element for a moment; Safari on iPhone loads nothing until playback starts. */
+  function nudge(el) {
+    const started = el.play();
+    if (started) started.then(() => el.pause()).catch(() => {});
+  }
+
+  /** Waits until a frame can be drawn (or gives up after a few seconds). */
+  function firstFrame(el) {
+    if (el.readyState >= 2) return Promise.resolve();
+    return new Promise((resolve) => {
+      let nudgeTimer = 0;
+      let giveUp = 0;
+      const done = () => {
+        el.removeEventListener('loadeddata', done);
+        clearTimeout(nudgeTimer);
+        clearTimeout(giveUp);
+        resolve();
+      };
+      el.addEventListener('loadeddata', done);
+      nudgeTimer = setTimeout(() => nudge(el), 400);
+      giveUp = setTimeout(done, 6000);
+    });
+  }
+
   function openVideo(el, url) {
     return new Promise((resolve, reject) => {
-      const cleanup = () => {
+      let settled = false;
+      let nudgeTimer = 0;
+      let giveUp = 0;
+      const finish = (fn, value) => {
+        if (settled) return;
+        settled = true;
         el.removeEventListener('loadedmetadata', onMeta);
         el.removeEventListener('error', onError);
+        clearTimeout(nudgeTimer);
+        clearTimeout(giveUp);
+        fn(value);
       };
-      const onError = () => {
-        cleanup();
-        reject(new Error('unsupported'));
-      };
-      const onMeta = async () => {
-        cleanup();
-        if (!el.videoWidth || !el.videoHeight) {
-          reject(new Error('no-video'));
-          return;
-        }
-        const duration = Number.isFinite(el.duration) ? el.duration : await probeDuration(el);
-        if (!(duration > 0)) {
-          reject(new Error('no-duration'));
-          return;
-        }
-        resolve({ width: el.videoWidth, height: el.videoHeight, duration });
-      };
+      const onMeta = () => finish(resolve);
+      const onError = () => finish(reject, new Error('unsupported'));
       el.addEventListener('loadedmetadata', onMeta);
       el.addEventListener('error', onError);
+      // Muted media may load and play without a click; the real mute state is restored afterwards.
+      el.muted = true;
       el.src = url;
       el.load();
+      nudgeTimer = setTimeout(() => nudge(el), 1000);
+      giveUp = setTimeout(() => finish(reject, new Error('timeout')), 30000);
+    }).then(async () => {
+      if (!el.videoWidth || !el.videoHeight) throw new Error('no-video');
+      const duration = Number.isFinite(el.duration) ? el.duration : await probeDuration(el);
+      if (!(duration > 0)) throw new Error('no-duration');
+      await firstFrame(el);
+      return { width: el.videoWidth, height: el.videoHeight, duration };
     });
   }
 
   function loadErrorText(name, err) {
     if (err.message === 'no-video') return `“${name}” dosyasında görüntü yok. Lütfen bir video dosyası seçin.`;
     if (err.message === 'no-duration') return `“${name}” dosyasının süresi okunamadı. Dosya bozuk ya da yarım kalmış olabilir.`;
+    if (err.message === 'timeout') return `“${name}” yüklenemedi: tarayıcı 30 saniye içinde dosyayı açamadı. Sayfayı yenileyip yeniden deneyin.`;
     return `“${name}” açılamadı. Tarayıcınız bu biçimi oynatamıyor olabilir; MP4 (H.264) ya da WebM olarak kaydedip yeniden deneyin.`;
   }
 
@@ -414,6 +449,7 @@
         el.removeAttribute('src');
         el.load();
       }
+      applyPlayerSettings();
     }
   }
 
@@ -801,9 +837,9 @@
     if (state.exporting || !state.media.screen) return;
     const chosen = forceRealtime ? realtimeFallbackPlan() : state.plan;
     if (!chosen || chosen.method === 'none') return;
-    // AudioContext must be created while the click still counts as a user gesture.
-    const audioContext = chosen.method === 'realtime' ? new (root.AudioContext || root.webkitAudioContext)() : null;
     const job = buildJob();
+    // Real-time export starts its media and audio here, while the click still counts (Safari).
+    const kit = chosen.method === 'realtime' ? exporter.prepareRealtime(job) : null;
     let name = U.exportFileName(chosen.container);
     let target = null;
     let onDisk = false;
@@ -846,7 +882,7 @@
         blob = await target.finish(r.mimeType);
       } else {
         const r = await exporter.exportRealtime(job, chosen, {
-          onProgress: showProgress, signal: controller.signal, audioContext,
+          onProgress: showProgress, signal: controller.signal, kit,
         });
         blob = r.blob;
       }
@@ -855,13 +891,15 @@
     } catch (err) {
       if (err && err.name === 'AbortError') {
         showExportError('Dışa aktarma iptal edildi.');
+      } else if (err && err.name === 'NotAllowedError') {
+        showExportError('Tarayıcı videoyu sesli oynatmaya izin vermedi. Sayfada bir yere dokunup dışa aktarmayı yeniden başlatın.');
       } else {
         console.error(err);
         const msg = err && err.message ? err.message : String(err);
         const canRetry = chosen.method === 'fast' && !!realtimeFallbackPlan();
         showExportError(`Dışa aktarma tamamlanamadı: ${msg}`, canRetry);
       }
-      if (audioContext && audioContext.state !== 'closed') audioContext.close().catch(() => {});
+      if (kit) exporter.disposeRealtime(kit);
     } finally {
       state.exporting = null;
       els.progress.hidden = true;
@@ -1001,7 +1039,8 @@
   });
   player.addEventListener('state', syncTransport);
 
-  els.play.addEventListener('click', () => player.toggle());
+  const togglePlay = () => Promise.resolve(player.toggle()).catch(() => {});
+  els.play.addEventListener('click', togglePlay);
   els.toStart.addEventListener('click', () => player.seek(state.trim.start));
   els.toEnd.addEventListener('click', () => player.seek(state.trim.end));
   els.prevFrame.addEventListener('click', () => step(-1 / fps()));
@@ -1235,7 +1274,7 @@
       case ' ':
         if (onButton) return;
         e.preventDefault();
-        if (state.media.screen) player.toggle();
+        if (state.media.screen) togglePlay();
         break;
       case ',':
         step(-1 / fps());
@@ -1270,8 +1309,9 @@
     }
   });
 
-  new ResizeObserver(() => fitFrame()).observe(els.monitor);
-  stacked.addEventListener('change', fitFrame);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(() => fitFrame()).observe(els.monitor);
+  if (stacked.addEventListener) stacked.addEventListener('change', fitFrame);
+  else stacked.addListener(fitFrame);
   window.addEventListener('resize', fitFrame);
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => {
@@ -1282,6 +1322,7 @@
 
   // ---- Start ---------------------------------------------------------------------
 
+  els.volumeNote.hidden = !volumeLocked;
   loadPrefs();
   ensureBox();
   buildResolutionOptions();

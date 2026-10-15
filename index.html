@@ -233,6 +233,7 @@
           </div>
         </div>
         <p class="hint">İki kayıtta da aynı mikrofonun sesi varsa birini kısın, yoksa konuşma yankılı duyulur.</p>
+        <p class="hint" id="volumeNote" hidden>Bu cihaz önizlemede ses düzeyini değiştirmeye izin vermiyor; burada yalnızca sesi kapatıp açabilirsiniz. Seçtiğiniz düzey dışa aktarılan videoya yine de uygulanır.</p>
       </section>
 
       <section class="panel" aria-labelledby="h-sync">
@@ -308,8 +309,10 @@
   </main>
 </div>
 
-<video id="screenVideo" playsinline preload="auto" hidden></video>
-<video id="cameraVideo" playsinline preload="auto" hidden></video>
+<div class="media-sink" id="mediaSink" aria-hidden="true">
+  <video id="screenVideo" playsinline webkit-playsinline preload="auto"></video>
+  <video id="cameraVideo" playsinline webkit-playsinline preload="auto"></video>
+</div>
 
 <script src="vendor/mediabunny.min.js"></script>
 <script src="js/util.js"></script>
