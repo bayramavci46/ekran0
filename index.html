@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Ekran + Kamera Kurgu Masası</title>
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <meta name="description" content="Ekran kaydı ile kamera kaydını tek videoda birleştirin: kamera penceresini istediğiniz yere taşıyın, büyütüp küçültün, MP4 olarak kaydedin.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="tally" aria-hidden="true"></span>
+      <h1 class="brand-name">Ekran + Kamera <span>Kurgu Masası</span></h1>
+    </div>
+    <p class="project-status" id="projectStatus" role="status">Örnek görüntü açık</p>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="undoBtn" type="button" aria-label="Geri al" title="Geri al (Ctrl+Z)" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-3"/></svg>
+      </button>
+      <button class="icon-btn" id="redoBtn" type="button" aria-label="Yinele" title="Yinele (Ctrl+Shift+Z)" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5M20 12H9a5 5 0 0 0 0 10h3"/></svg>
+      </button>
+      <button class="btn btn-quiet" id="shortcutsBtn" type="button" aria-expanded="false" aria-controls="shortcuts">Kısayollar</button>
+    </div>
+  </header>
+
+  <section class="shortcuts" id="shortcuts" aria-label="Klavye kısayolları" hidden>
+    <dl>
+      <div><dt><kbd>Boşluk</kbd></dt><dd>Oynat / duraklat</dd></div>
+      <div><dt><kbd>←</kbd> <kbd>→</kbd> ya da <kbd>,</kbd> <kbd>.</kbd></dt><dd>Bir kare geri / ileri</dd></div>
+      <div><dt><kbd>Shift</kbd> + <kbd>←</kbd> <kbd>→</kbd></dt><dd>1 saniye geri / ileri</dd></div>
+      <div><dt><kbd>I</kbd> <kbd>O</kbd></dt><dd>Başlangıç / bitiş noktasını buraya koy</dd></div>
+      <div><dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>Başlangıç / bitiş noktasına git</dd></div>
+      <div><dt>Kamera seçiliyken <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd></dt><dd>Kamerayı taşı (Shift ile daha hızlı)</dd></div>
+      <div><dt>Kamera seçiliyken <kbd>+</kbd> <kbd>−</kbd></dt><dd>Kamerayı büyüt / küçült</dd></div>
+      <div><dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt><dd>Geri al (Shift ile yinele)</dd></div>
+    </dl>
+  </section>
+
+  <main class="workspace">
+    <section class="editor" aria-label="Önizleme ve zaman çizelgesi">
+      <div class="monitor" id="monitor">
+        <div class="frame" id="frame">
+          <canvas id="preview" aria-label="Video önizlemesi"></canvas>
+          <div class="guides" id="guides" aria-hidden="true"></div>
+          <div class="cam-box" id="camBox" tabindex="0" role="group" aria-roledescription="taşınabilir pencere"
+               aria-label="Kamera penceresi. Sürükleyerek taşıyın, köşelerden büyütüp küçültün. Ok tuşları ile taşıyabilir, artı ve eksi ile boyutlandırabilirsiniz.">
+            <span class="handle" data-h="nw"></span><span class="handle" data-h="n"></span>
+            <span class="handle" data-h="ne"></span><span class="handle" data-h="e"></span>
+            <span class="handle" data-h="se"></span><span class="handle" data-h="s"></span>
+            <span class="handle" data-h="sw"></span><span class="handle" data-h="w"></span>
+            <span class="cam-readout" id="camReadout"></span>
+          </div>
+          <p class="frame-badge" id="frameBadge">Örnek görüntü<span> · kamerayı sürükleyip boyutlandırmayı deneyin</span></p>
+        </div>
+        <div class="drop-veil" id="dropVeil" hidden>
+          <p>Videoyu bırakın</p>
+        </div>
+      </div>
+
+      <div class="transport">
+        <div class="transport-buttons">
+          <button class="icon-btn" id="toStartBtn" type="button" aria-label="Başlangıç noktasına git" title="Başlangıç noktasına git (Home)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M18 6l-8 6 8 6z"/></svg>
+          </button>
+          <button class="icon-btn" id="prevFrameBtn" type="button" aria-label="Bir kare geri" title="Bir kare geri (,)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+          </button>
+          <button class="play-btn" id="playBtn" type="button" aria-label="Oynat" title="Oynat / duraklat (Boşluk)">
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+            <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+          </button>
+          <button class="icon-btn" id="nextFrameBtn" type="button" aria-label="Bir kare ileri" title="Bir kare ileri (.)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </button>
+          <button class="icon-btn" id="toEndBtn" type="button" aria-label="Bitiş noktasına git" title="Bitiş noktasına git (End)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14M6 6l8 6-8 6z"/></svg>
+          </button>
+        </div>
+        <p class="timecode" aria-label="Zaman kodu">
+          <span id="tcNow">00:00:00:00</span><span class="tc-total"> / <span id="tcTotal">00:00:00:00</span></span>
+        </p>
+        <div class="transport-marks">
+          <button class="btn btn-mark" id="markInBtn" type="button" title="Başlangıç noktasını oynatma konumuna koy (I)">
+            <span class="bracket" aria-hidden="true">[</span> Başlangıç <kbd>I</kbd>
+          </button>
+          <button class="btn btn-mark" id="markOutBtn" type="button" title="Bitiş noktasını oynatma konumuna koy (O)">
+            Bitiş <span class="bracket" aria-hidden="true">]</span> <kbd>O</kbd>
+          </button>
+        </div>
+      </div>
+
+      <div class="timeline" id="timeline"></div>
+      <p class="range-info" id="rangeInfo">Zaman çizelgesi, ekran kaydını yükleyince açılır.</p>
+    </section>
+
+    <aside class="inspector" aria-label="Ayarlar">
+      <section class="panel" aria-labelledby="h-sources">
+        <h2 class="panel-title" id="h-sources">Kayıtlar</h2>
+
+        <div class="slot" id="slotScreen" data-slot="screen">
+          <div class="slot-head">
+            <span class="slot-kind">Ekran kaydı</span>
+            <span class="slot-role">tam ekran, arka planda</span>
+          </div>
+          <label class="drop" id="dropScreen">
+            <input class="visually-hidden" type="file" id="fileScreen" accept="video/*,.mkv,.mov,.m4v,.webm">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+            <span><strong>Dosya seçin</strong> ya da buraya sürükleyin</span>
+          </label>
+          <div class="slot-file" hidden>
+            <p class="slot-name"></p>
+            <p class="slot-meta"></p>
+            <div class="slot-actions">
+              <button class="btn btn-small" type="button" data-action="replace">Değiştir</button>
+              <button class="btn btn-small btn-quiet" type="button" data-action="remove">Kaldır</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-quiet swap-btn" id="swapBtn" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3"/></svg>
+          Yerlerini değiştir
+        </button>
+
+        <div class="slot" id="slotCamera" data-slot="camera">
+          <div class="slot-head">
+            <span class="slot-kind">Kamera kaydı</span>
+            <span class="slot-role">taşınabilir pencere</span>
+          </div>
+          <label class="drop" id="dropCamera">
+            <input class="visually-hidden" type="file" id="fileCamera" accept="video/*,.mkv,.mov,.m4v,.webm">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>
+            <span><strong>Dosya seçin</strong> ya da buraya sürükleyin</span>
+          </label>
+          <div class="slot-file" hidden>
+            <p class="slot-name"></p>
+            <p class="slot-meta"></p>
+            <div class="slot-actions">
+              <button class="btn btn-small" type="button" data-action="replace">Değiştir</button>
+              <button class="btn btn-small btn-quiet" type="button" data-action="remove">Kaldır</button>
+            </div>
+          </div>
+        </div>
+        <p class="error" id="loadError" role="alert" hidden></p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-camera">
+        <h2 class="panel-title" id="h-camera">Kamera penceresi</h2>
+        <div class="field">
+          <span class="field-label" id="lblShape">Şekil</span>
+          <div class="segmented" role="radiogroup" aria-labelledby="lblShape" id="shapeGroup">
+            <button type="button" role="radio" data-shape="rect" aria-checked="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12"/></svg>Dikdörtgen
+            </button>
+            <button type="button" role="radio" data-shape="rounded" aria-checked="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="4"/></svg>Yuvarlak köşe
+            </button>
+            <button type="button" role="radio" data-shape="circle" aria-checked="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Daire
+            </button>
+          </div>
+        </div>
+        <div class="field" id="radiusField">
+          <label class="field-label" for="radius">Köşe yuvarlaklığı <output id="radiusOut" for="radius"></output></label>
+          <input type="range" id="radius" min="0" max="100" step="1">
+        </div>
+        <div class="field">
+          <label class="field-label" for="size">Boyut (kare genişliğine göre) <output id="sizeOut" for="size"></output></label>
+          <input type="range" id="size" min="6" max="100" step="1">
+        </div>
+        <div class="field">
+          <span class="field-label" id="lblPos">Konum</span>
+          <div class="pos-grid" role="group" aria-labelledby="lblPos">
+            <button type="button" data-pos="tl" aria-label="Sol üst"></button>
+            <button type="button" data-pos="tc" aria-label="Üst orta"></button>
+            <button type="button" data-pos="tr" aria-label="Sağ üst"></button>
+            <button type="button" data-pos="ml" aria-label="Sol orta"></button>
+            <button type="button" data-pos="mc" aria-label="Tam orta"></button>
+            <button type="button" data-pos="mr" aria-label="Sağ orta"></button>
+            <button type="button" data-pos="bl" aria-label="Sol alt"></button>
+            <button type="button" data-pos="bc" aria-label="Alt orta"></button>
+            <button type="button" data-pos="br" aria-label="Sağ alt"></button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="border">Çerçeve <output id="borderOut" for="border"></output></label>
+          <input type="range" id="border" min="0" max="24" step="1">
+          <div class="swatches" role="radiogroup" aria-label="Çerçeve rengi" id="swatches">
+            <button type="button" role="radio" class="swatch" data-color="#ffffff" aria-label="Beyaz" aria-checked="false"></button>
+            <button type="button" role="radio" class="swatch" data-color="#111111" aria-label="Siyah" aria-checked="false"></button>
+            <button type="button" role="radio" class="swatch" data-color="#f0a73a" aria-label="Kehribar" aria-checked="false"></button>
+            <button type="button" role="radio" class="swatch" data-color="#5fc4bb" aria-label="Turkuaz" aria-checked="false"></button>
+            <label class="swatch swatch-custom" title="Başka bir renk seçin">
+              <input type="color" id="borderColor" aria-label="Özel çerçeve rengi">
+            </label>
+          </div>
+        </div>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="shadow"><span>Gölge</span></label>
+          <label class="toggle"><input type="checkbox" id="mirror"><span>Ayna görüntüsü</span></label>
+          <label class="toggle"><input type="checkbox" id="camVisible"><span>Kamerayı göster</span></label>
+        </div>
+        <p class="hint">Köşeden sürüklerseniz oran korunur (serbest boyut için Shift’e basılı tutun). Kenardan sürüklerseniz pencerenin şekli değişir; görüntü bozulmadan kırpılır. Fare tekerleğiyle de büyütüp küçültebilirsiniz.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-audio">
+        <h2 class="panel-title" id="h-audio">Ses</h2>
+        <div class="field">
+          <label class="field-label" for="volScreen">Ekran kaydı sesi <output id="volScreenOut" for="volScreen"></output></label>
+          <div class="volume-row">
+            <button class="icon-btn mute-btn" id="muteScreen" type="button" aria-pressed="false" aria-label="Ekran kaydının sesini kapat">
+              <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 9a4 4 0 0 1 0 6"/></svg>
+              <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 10l4 4m0-4-4 4"/></svg>
+            </button>
+            <input type="range" id="volScreen" min="0" max="100" step="1">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="volCamera">Kamera kaydı sesi <output id="volCameraOut" for="volCamera"></output></label>
+          <div class="volume-row">
+            <button class="icon-btn mute-btn" id="muteCamera" type="button" aria-pressed="false" aria-label="Kamera kaydının sesini kapat">
+              <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 9a4 4 0 0 1 0 6"/></svg>
+              <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 10l4 4m0-4-4 4"/></svg>
+            </button>
+            <input type="range" id="volCamera" min="0" max="100" step="1">
+          </div>
+        </div>
+        <p class="hint">İki kayıtta da aynı mikrofonun sesi varsa birini kısın, yoksa konuşma yankılı duyulur.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-sync">
+        <h2 class="panel-title" id="h-sync">Senkron</h2>
+        <div class="field">
+          <label class="field-label" for="offset">Kamera kaydırması (saniye)</label>
+          <div class="offset-row">
+            <button class="btn btn-small" type="button" data-nudge="-1" aria-label="1 saniye erkene al">−1</button>
+            <button class="btn btn-small" type="button" data-nudge="-0.1" aria-label="0,1 saniye erkene al">−0,1</button>
+            <input type="number" id="offset" step="0.01" inputmode="decimal">
+            <button class="btn btn-small" type="button" data-nudge="0.1" aria-label="0,1 saniye geciktir">+0,1</button>
+            <button class="btn btn-small" type="button" data-nudge="1" aria-label="1 saniye geciktir">+1</button>
+          </div>
+        </div>
+        <button class="btn btn-small btn-quiet" id="alignBtn" type="button">Kamerayı oynatma konumunda başlat</button>
+        <p class="hint">Kamera kaydı ekran kaydından sonra başladıysa değer pozitif olur. Zaman çizelgesinde kamera klibini sürükleyerek de ayarlayabilirsiniz. Kayda başlarken bir kez el çırparsanız iki kayıtta o anı hizalamak en kolay yoldur.</p>
+      </section>
+
+      <section class="panel panel-export" aria-labelledby="h-export">
+        <h2 class="panel-title" id="h-export">Dışa aktar</h2>
+        <div class="field-grid">
+          <div class="field">
+            <label class="field-label" for="outRes">Çözünürlük</label>
+            <select id="outRes"></select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="outFps">Kare hızı</label>
+            <select id="outFps">
+              <option value="24">24 fps</option>
+              <option value="25">25 fps</option>
+              <option value="30">30 fps</option>
+              <option value="50">50 fps</option>
+              <option value="60">60 fps</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="outQuality">Kalite</label>
+            <select id="outQuality">
+              <option value="very-high">Çok yüksek</option>
+              <option value="high">Yüksek</option>
+              <option value="medium">Orta</option>
+              <option value="low">Düşük (küçük dosya)</option>
+            </select>
+          </div>
+          <div class="field field-wide">
+            <label class="field-label" for="outFormat">Biçim</label>
+            <select id="outFormat"></select>
+          </div>
+        </div>
+        <p class="method" id="exportMethod"></p>
+        <button class="btn btn-primary btn-wide" id="exportBtn" type="button" disabled>Videoyu dışa aktar</button>
+
+        <div class="export-progress" id="exportProgress" hidden>
+          <div class="progress" role="progressbar" aria-labelledby="h-export" aria-valuemin="0" aria-valuemax="100" id="progressBarWrap">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <p class="progress-text" id="progressText" aria-live="polite"></p>
+          <button class="btn btn-small btn-quiet" id="cancelBtn" type="button">İptal et</button>
+        </div>
+
+        <div class="export-result" id="exportResult" hidden>
+          <video id="resultVideo" controls playsinline preload="metadata"></video>
+          <p class="result-text" id="resultText"></p>
+          <div class="result-actions">
+            <button class="btn btn-primary" id="downloadBtn" type="button">İndir</button>
+            <button class="btn btn-quiet" id="closeResultBtn" type="button">Kapat</button>
+          </div>
+        </div>
+        <p class="error" id="exportError" role="alert" hidden></p>
+        <button class="btn btn-small" id="retryRealtimeBtn" type="button" hidden>Gerçek zamanlı kayıtla dene</button>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<video id="screenVideo" playsinline preload="auto" hidden></video>
+<video id="cameraVideo" playsinline preload="auto" hidden></video>
+
+<script src="vendor/mediabunny.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/geometry.js"></script>
+<script src="js/audio-mix.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/demo.js"></script>
+<script src="js/player.js"></script>
+<script src="js/timeline.js"></script>
+<script src="js/stage.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
