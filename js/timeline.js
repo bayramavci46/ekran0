@@ -39,6 +39,8 @@
       const screenLane = el('div', 'tl-lane', lanes);
       this.screenClip = el('div', 'tl-clip tl-clip-screen', screenLane);
       this.screenClipName = el('span', 'tl-clip-name', this.screenClip);
+      this.screenEmpty = el('span', 'tl-lane-empty', screenLane);
+      this.screenEmpty.textContent = 'Ekran kaydı yok';
       const camLane = el('div', 'tl-lane', lanes);
       this.camClip = el('div', 'tl-clip tl-clip-camera', camLane);
       this.camClip.tabIndex = 0;
@@ -119,6 +121,7 @@
       const empty = D <= 0;
       this.area.parentElement.classList.toggle('is-empty', empty);
       this.screenClip.hidden = empty;
+      this.screenEmpty.hidden = !empty;
       this.screenClipName.textContent = this.d.screenName;
 
       this.shadeBefore.style.left = '0%';
