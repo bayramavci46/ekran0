@@ -88,14 +88,17 @@
       check('automatic sync', sync && sync.status === 'ok' && Math.abs(PE.app.state.offset - LATE) < 0.05,
         { status: sync ? sync.status : 'timeout', offset: PE.app.state.offset });
 
+      // The format the Export button would use: the editor picks it once it has tried the encoders
+      // (MP4 where a fast MP4 encoder works, otherwise WebM; simulators differ from machine to machine).
+      const formats = await until(() => PE.app.state.formats, 120000);
       const job = { ...PE.app.buildJob(), trimStart: 3, trimEnd: 5 };
-      const formats = await PE.exporter.detectFormats();
       const plan = await PE.exporter.plan(job);
       check('export plan', plan.method !== 'none', {
         method: plan.method, video: plan.videoCodec || null, acceleration: plan.videoAcceleration || null, audio: plan.audioCodec || null,
-        size: `${job.output.width}x${job.output.height}`, formats: formats.map((f) => f.label), reasons: plan.reasons,
+        size: `${job.output.width}x${job.output.height}`, format: job.output.format, formats: formats ? formats.map((f) => f.label) : null, reasons: plan.reasons,
       });
       const MB = await PE.exporter.getMediabunny();
+      const name = `deneme.${plan.container || job.output.format}`;
       // Where the export writes, so long videos need not fit in memory.
       await step('writes to private storage', 30, async (notes) => {
         const target = await PE.exporter.privateTarget('deneme.bin');
@@ -122,7 +125,7 @@
       const exported = await step('export', 150, async (notes) => {
         notes.method = plan.method;
         if (plan.method === 'fast') {
-          const target = (await PE.exporter.privateTarget('deneme.mp4')) || PE.exporter.memoryTarget();
+          const target = (await PE.exporter.privateTarget(name)) || PE.exporter.memoryTarget();
           const r = await PE.exporter.exportFast(job, plan, { target, onProgress, signal: controller.signal });
           notes.encoded = true;
           blob = await target.finish(r.mimeType);
@@ -151,7 +154,7 @@
         }
 
         await step('copied for the share sheet', 45, async (notes) => {
-          notes.uri = await PE.native.save(blob, 'deneme.mp4');
+          notes.uri = await PE.native.save(blob, name);
           notes.size = Number((await window.Capacitor.Plugins.Filesystem.stat({ path: notes.uri })).size);
           return notes.size === blob.size;
         });
