@@ -3,7 +3,7 @@ Videolarınız cihazınızdan çıkmaz; uygulama internet olmadan da çalışır
 
 **Bu sürümde yeni: telefon ve tablet**
 - **Android uygulaması.** Ekran ve kamera videolarınızı telefondan seçin, kamerayı parmağınızla taşıyıp büyütün, dışa aktarın. Biten videoyu paylaşım menüsünden Galeri'ye, Dosyalar'a ya da istediğiniz uygulamaya gönderirsiniz.
-- **iPhone ve iPad.** Editörü Safari'de açıp **Paylaş → Ana Ekrana Ekle** ile kurun; Kurgu Masası kendi simgesiyle, uygulama gibi ve internetsiz açılır.
+- **iPhone ve iPad.** Editörü Safari'de açıp **Paylaş → Ana Ekrana Ekle** ile kurun; Kurgu Masası kendi simgesiyle, uygulama gibi ve internetsiz açılır. Biten videoyu **Kaydet ya da paylaş** düğmesiyle Fotoğraflar'a kaydedersiniz.
 - Telefonda dikey çekilmiş kamera videoları da doğru yönde açılır; sesten otomatik eşleme ve hızlı dışa aktarma telefonda da çalışır.
 - Masaüstü uygulamasındaki ekran ve kamera kaydı aynen sürüyor.
 
