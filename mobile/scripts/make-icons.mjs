@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /*
  * Draws the app icons and launch screens of the iOS and Android apps from the SVGs in
- * mobile/assets (which are made from desktop/build/icon.svg). Run it after changing the icon;
- * the PNGs it writes are kept in the native projects. Needs Playwright with Chromium
- * (npm i -g playwright && npx playwright install chromium).
+ * mobile/assets (which are made from desktop/build/icon.svg), and the icons of the installable
+ * website (icons/). Run it after changing the icon; the PNGs it writes are kept in the
+ * repository. Needs Playwright with Chromium (npm i -g playwright && npx playwright install chromium).
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -63,5 +63,14 @@ for (const [d, scale] of Object.entries(DENSITIES)) {
   await draw(join(dir, 'ic_launcher.png'), legacy, `<div style="position:absolute;inset:4%;border-radius:18%;overflow:hidden">${both}</div>`);
   await draw(join(dir, 'ic_launcher_round.png'), legacy, `<div style="position:absolute;inset:4%;border-radius:50%;overflow:hidden">${both}</div>`);
 }
+// The installable website (manifest.webmanifest): the desktop icon's tile, a full-bleed one for
+// launchers that cut their own shape, and the one iOS puts on the home screen.
+const web = join(mobile, '..', 'icons');
+const tile = readFileSync(join(mobile, '..', 'desktop', 'build', 'icon.svg'), 'utf8');
+await draw(join(web, 'icon-192.png'), 192, tile);
+await draw(join(web, 'icon-512.png'), 512, tile);
+await draw(join(web, 'icon-maskable-512.png'), 512, `<div style="position:absolute;inset:0">${svg('icon-android-background.svg')}</div><div style="position:absolute;inset:0">${svg('icon-android-foreground.svg')}</div>`, { opaque: true });
+await draw(join(web, 'apple-touch-icon.png'), 180, svg('icon-ios.svg'), { opaque: true, background: DARK });
+
 await browser.close();
 console.log('icons written');

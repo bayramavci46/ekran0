@@ -1,18 +1,21 @@
-Ekran kaydı ile kamera kaydını tek videoda birleştiren Kurgu Masası, masaüstü uygulaması olarak.
-Videolarınız bilgisayarınızdan çıkmaz; uygulama internet olmadan da çalışır.
+Ekran kaydı ile kamera kaydını tek videoda birleştiren Kurgu Masası; Windows, Mac, Android ve iPhone için.
+Videolarınız cihazınızdan çıkmaz; uygulama internet olmadan da çalışır.
 
-**Bu sürümde yeni: ekran ve kamera kaydı**
-- Üst çubuktaki **Kayıt** düğmesiyle ekranı (ya da bir pencereyi) ve kamerayı aynı anda kaydedin. Kamerayı ve mikrofonu seçersiniz, kaydı istediğiniz an duraklatırsınız.
-- Ekran ve kamera ayrı dosyalara, aynı saate göre kaydedilir. Bitirince ikisi de editöre yüklenir ve kamera kendiliğinden hizalanır; sesten eşlemeye gerek kalmaz.
-- Kayıt sürerken pencere isterseniz küçülür. Kaydı menü çubuğundaki (Windows'ta görev çubuğunun sağındaki) kırmızı simgeden duraklatır ya da bitirirsiniz.
-- Windows'ta bilgisayarın sesi de kaydedilebilir. macOS 15 ve sonrasında ekranı sistemin kendi seçicisinden seçersiniz.
+**Bu sürümde yeni: telefon ve tablet**
+- **Android uygulaması.** Ekran ve kamera videolarınızı telefondan seçin, kamerayı parmağınızla taşıyıp büyütün, dışa aktarın. Biten videoyu paylaşım menüsünden Galeri'ye, Dosyalar'a ya da istediğiniz uygulamaya gönderirsiniz.
+- **iPhone ve iPad.** Editörü Safari'de açıp **Paylaş → Ana Ekrana Ekle** ile kurun; Kurgu Masası kendi simgesiyle, uygulama gibi ve internetsiz açılır.
+- Telefonda dikey çekilmiş kamera videoları da doğru yönde açılır; sesten otomatik eşleme ve hızlı dışa aktarma telefonda da çalışır.
+- Masaüstü uygulamasındaki ekran ve kamera kaydı aynen sürüyor.
 
 **İndir**
 - Windows 10 ve 11 (64 bit): `Kurgu-Masasi-Windows.exe`
 - macOS 12 ve sonrası, Apple Silicon ve Intel: `Kurgu-Masasi-Mac.dmg`
+- Android 7 ve sonrası: `Kurgu-Masasi-Android.apk`
+- iPhone ve iPad (iOS 16 ve sonrası, imzasız): `Kurgu-Masasi-iOS.ipa`
 
 **İlk açılış**
-Uygulama henüz bir geliştirici sertifikasıyla imzalanmadığı için sistem ilk açılışta uyarır:
+Uygulamalar henüz bir geliştirici sertifikasıyla imzalanmadığı ve mağazalarda olmadığı için sistem ilk açılışta uyarır:
 - Windows: "Windows kişisel bilgisayarınızı korudu" penceresinde **Ek bilgi**, sonra **Yine de çalıştır**.
-- Mac: Uygulamayı Uygulamalar klasörüne sürükleyip açın. "Açılmadı" uyarısı çıkarsa **Sistem Ayarları → Gizlilik ve Güvenlik** bölümünde **Yine de Aç** düğmesine basın.
-- Mac'te ilk kayıtta kamera, mikrofon ve ekran kaydı izinleri istenir. Ekran kaydı iznini verdikten sonra uygulamayı bir kez kapatıp açın.
+- Mac: Uygulamayı Uygulamalar klasörüne sürükleyip açın. "Açılmadı" uyarısı çıkarsa **Sistem Ayarları → Gizlilik ve Güvenlik** bölümünde **Yine de Aç** düğmesine basın. İlk kayıtta kamera, mikrofon ve ekran kaydı izinleri istenir; ekran kaydı iznini verdikten sonra uygulamayı bir kez kapatıp açın.
+- Android: İndirilen APK dosyasını açın. Telefon izin isterse **Bu kaynaktan izin ver**'i açıp **Yükle**'ye dokunun.
+- iPhone: En kolayı yukarıdaki gibi ana ekrana eklemektir. `.ipa` dosyası App Store dışından uygulama kuranlar içindir (AltStore ya da Sideloadly gibi araçlar kendi Apple hesabınızla imzalar).

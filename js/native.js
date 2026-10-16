@@ -41,7 +41,8 @@
   async function save(blob, name, onProgress) {
     const path = `${FOLDER}/${name}`;
     // Only one file waits to be shared at a time.
-    await Filesystem.rmdir({ path: FOLDER, directory: 'CACHE', recursive: true }).catch(() => {});
+    const { files } = await Filesystem.readdir({ path: '', directory: 'CACHE' });
+    if (files.some((f) => f.name === FOLDER)) await Filesystem.rmdir({ path: FOLDER, directory: 'CACHE', recursive: true });
     let at = 0;
     do {
       const data = await base64(blob.slice(at, at + CHUNK));

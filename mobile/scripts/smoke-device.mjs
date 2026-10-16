@@ -86,7 +86,7 @@ try {
   else run('xcrun', ['simctl', 'io', device.udid, 'screenshot', shot]);
   const small = `smoke-${platform}-small.jpg`;
   if (platform === 'ios') run('sips', ['-Z', '420', '-s', 'format', 'jpeg', '-s', 'formatOptions', '55', shot, '--out', small]);
-  else run('convert', [shot, '-resize', '420x420>', '-quality', '55', small]);
+  else run('ffmpeg', ['-y', '-loglevel', 'error', '-i', shot, '-vf', 'scale=-2:420', '-q:v', '7', small]);
   console.log(`KURGU_SCREENSHOT_BEGIN ${readFileSync(small).toString('base64')} KURGU_SCREENSHOT_END`);
 } catch (err) {
   console.log(`No screenshot: ${err.message}`);

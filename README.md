@@ -1,6 +1,7 @@
 # Ekran + Kamera Kurgu Masası
 
-Ekran kaydını ve kamera kaydını tek bir videoda birleştiren, tarayıcıda çalışan bir video düzenleyici.
+Ekran kaydını ve kamera kaydını tek bir videoda birleştiren bir video düzenleyici: tarayıcıda, Windows ve Mac'te,
+Android'de, iPhone ve iPad'de çalışır.
 Ekranı ve kamerayı editörün kendisiyle aynı anda kaydedebilir ya da hazır iki kaydı açabilirsiniz.
 Ekran kaydı arka planda tam ekran oynar. Kamera kaydı onun üstünde, istediğiniz yere taşıyıp
 istediğiniz boyuta getirebildiğiniz bir pencere olarak durur. İki kayıt farklı anlarda başladıysa editör
@@ -35,6 +36,8 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 
 - **Masaüstü uygulaması:** Windows ve Mac için kurulum dosyaları aşağıdaki
   [Masaüstü uygulaması](#masaüstü-uygulaması) bölümünde.
+- **Telefon ve tablet:** Android uygulaması ve iPhone/iPad için ana ekran uygulaması aşağıdaki
+  [Telefon ve tablet](#telefon-ve-tablet) bölümünde.
 - **En kolayı:** `editor.html` dosyasına çift tıklayın. Chrome ya da Edge önerilir.
   `index.html` ürünün tanıtım sitesidir; oradaki **Editörü aç** düğmesi de editöre götürür.
 - **Tek dosya:** `npm run build` komutu `dist/ekran-kamera-kurgu.html` dosyasını üretir. Bu dosya her yere
@@ -44,6 +47,8 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 - **iPhone ve iPad:** Dosyalar uygulamasından açılan HTML dosyası çalışmaz, uygulamayı bir web adresinden açın.
   GitHub Pages bunun için yeterli: depo ayarlarında **Pages** bölümünde kaynak olarak `main` dalını ve `/ (root)`
   klasörünü seçin; birkaç dakika sonra uygulama `https://<kullanıcı-adı>.github.io/<depo-adı>/` adresinde açılır.
+  Site bir web adresinden açıldığında kurulabilir bir uygulamadır (`manifest.webmanifest`, `sw.js`): bir kez
+  açıldıktan sonra internetsiz de çalışır.
 
 ## Masaüstü uygulaması
 
@@ -68,6 +73,22 @@ Uygulama henüz bir geliştirici sertifikasıyla imzalanmadığı için ilk aç�
 
 Bu uyarıları kaldırmak için Windows'ta bir kod imzalama sertifikası, Mac'te Apple Developer Programı üyeliği
 (Developer ID ile imzalama ve notarization) gerekir. İkisi de derleme iş akışına sonradan eklenebilir.
+
+## Telefon ve tablet
+
+- **Android 7 ve sonrası:** [Kurgu-Masasi-Android.apk](https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Android.apk).
+  İndirilen dosyayı açın; telefon izin isterse bu kaynaktan yüklemeye izin verin (uygulama henüz Google Play'de
+  olmadığı için bu izin bir kez istenir).
+- **iPhone ve iPad (iOS 16 ve sonrası):** editörü Safari'de web adresinden açın (bkz. GitHub Pages yukarıda),
+  **Paylaş → Ana Ekrana Ekle**'ye dokunun. Kurgu Masası ana ekranda kendi simgesiyle, uygulama gibi ve internetsiz
+  açılır. Sürüm sayfasında imzasız bir `Kurgu-Masasi-iOS.ipa` da vardır; AltStore ya da Sideloadly gibi araçlarla
+  kendi Apple kimliğinizle imzalanıp yüklenebilir. App Store için Apple Developer Programı üyeliği gerekir.
+
+Telefon uygulaması aynı editördür. Ekranı telefonun kendi ekran kaydıyla, kendinizi kamerayla kaydedip iki
+videoyu açarsınız (dikey çekilmiş videolar doğru yönde görünür); editör onları sesten eşler. Bitirdiğiniz video
+**Kaydet ya da paylaş** düğmesiyle sistemin paylaşım menüsüne gider: Fotoğraflar'a, Galeri'ye, Dosyalar'a ya da
+başka bir uygulamaya. Uzun videolar dışa aktarılırken belleğe değil cihazın deposuna yazılır. Android'de geri tuşu
+önce açık paneli kapatır.
 
 ## Kullanım
 
@@ -119,7 +140,7 @@ Bu uyarıları kaldırmak için Windows'ta bir kod imzalama sertifikası, Mac'te
 ## Geliştirme
 
 Web sürümünün derleme adımı ve bağımlılığı yoktur; dosyalar doğrudan tarayıcıda çalışır. Masaüstü uygulaması
-`desktop/` klasöründe ayrı bir npm projesidir.
+`desktop/`, telefon uygulaması `mobile/` klasöründe ayrı birer npm projesidir.
 
 ```
 index.html            tanıtım sitesi
@@ -140,9 +161,13 @@ js/recorder.js        ekran ve kamera kaydı: iki dosya, ortak saat, diske yazar
 js/record-panel.js    kayıt paneli: kamera ve mikrofon seçimi, önizleme, süre, duraklatma, masaüstü seçicisi
 js/demo.js            hiç kayıt yüklenmemişken gösterilen örnek görüntü
 js/app.js             durum, kontroller, geri al/yinele, tercihler
+js/native.js          telefon uygulamasında: paylaşım menüsü, Android'in geri tuşu
+js/offline.js, sw.js  kurulabilir web uygulaması: internetsiz açılış (manifest.webmanifest, icons/)
 vendor/               Mediabunny 1.60.0 (MPL-2.0, lisans metni klasörde)
+scripts/              tek dosyalık sürüm ve editörü uygulamalara kopyalayan ortak betik (bundle-app.mjs)
 desktop/              masaüstü uygulaması (Electron): pencere, menüler, kurulum ayarları, simge
-.github/workflows/    Windows ve Mac kurulum dosyalarını derleyip yayımlayan iş akışı
+mobile/               telefon uygulaması (Capacitor): Android ve iOS projeleri, simgeler, imza anahtarı, uygulama içi deneme
+.github/workflows/    bütün uygulamaları derleyip deneyen ve yayımlayan iş akışı (apps.yml)
 ```
 
 - `npm test` — birim testleri (Node 18 ve üzeri), otomatik senkron için yankılı, gürültülü ve farklı
@@ -168,7 +193,31 @@ dosyalarını yükleyebilir. `npm run smoke`, paketlenmiş uygulamayı gizli ola
 kodlayıcılarıyla iki deneme kaydı üretir, otomatik senkronu çalıştırır, iki saniyelik bir dışa aktarma yapar ve
 editörün kaydedicisiyle çizilmiş bir ekran ile kamera görüntüsünü kaydeder.
 
-Yeni sürüm yayımlamak için `desktop/package.json` içindeki sürümü artırın ve `v` ile başlayan bir etiket gönderin
-(ör. `git tag v1.1.1 && git push origin v1.1.1`) ya da GitHub'da **Actions → Masaüstü uygulaması → Run workflow**
-ile sürüm numarasını yazarak çalıştırın. GitHub Actions Windows ve Mac kurulum dosyalarını derler, ikisini de
-açıp dener ve bir sürüm olarak yayımlar. Sitedeki indirme bağlantıları her zaman en son sürümü indirir.
+### Telefon uygulamasını derlemek
+
+```
+cd mobile
+npm install
+npm run sync                     # editörü mobile/www içine kopyalar, Android ve iOS projelerine aktarır
+npx cap open android             # Android Studio'da açar (Android SDK gerekir)
+npx cap open ios                 # Xcode'da açar (Mac gerekir)
+```
+
+`node scripts/copy-app.mjs --smoke` ile hazırlanan deneme sürümü açıldığında kendini dener: iki deneme videosunu
+(biri telefon gibi dikey) açar, otomatik senkronu bekler, iki saniye dışa aktarır ve sonucu paylaşım için cihaza
+yazar; sonuçları uygulama günlüğüne basar. `node scripts/smoke-device.mjs android|ios <uygulama>` bu sürümü
+Android öykünücüsünde ya da iOS simülatöründe açıp sonuçları okur. Simgeler `mobile/assets` içindeki SVG'lerden
+`node scripts/make-icons.mjs` ile üretilir.
+
+Android sürümleri `mobile/signing/kurgu-masasi.p12` anahtarıyla imzalanır; parolası depoda değil, GitHub'da
+`ANDROID_KEYSTORE_PASSWORD` adlı bir gizli değer olarak durur (bkz. `mobile/signing/README.md`). iOS uygulaması
+imzasız derlenir; App Store ya da TestFlight için Apple Developer Programı üyeliği ve imza ayarları gerekir.
+
+### Sürüm yayımlamak
+
+`desktop/package.json` ve `mobile/package.json` içindeki sürümü artırın ve `v` ile başlayan bir etiket gönderin
+(ör. `git tag v1.2.1 && git push origin v1.2.1`) ya da GitHub'da **Actions → Uygulamalar → Run workflow** ile sürüm
+numarasını yazarak çalıştırın. GitHub Actions Windows ve Mac kurulum dosyalarını, Android uygulamasını ve iOS
+uygulamasını derler; her birini açıp dener (Android'i öykünücüde, iOS'u simülatörde) ve hepsini tek bir sürüm
+olarak yayımlar. Sürüm notları `.github/release-notes.md` dosyasından gelir. Sitedeki indirme bağlantıları her zaman
+en son sürümü indirir.

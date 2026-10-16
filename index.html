@@ -9,6 +9,13 @@
 <meta name="theme-color" content="#eef1f0" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c1112" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c1112'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23f0a73a'/%3E%3C/svg%3E">
+<!-- Installable app: manifest, icons and offline use where the site is served (sw.js, js/offline.js). -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Kurgu Masası">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<!-- /installable -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -57,7 +64,7 @@
       <a href="#nasil">Nasıl çalışır</a>
       <a href="#ozellikler">Özellikler</a>
       <a href="#gizlilik">Gizlilik</a>
-      <a href="#indir">Masaüstü uygulamasını indir</a>
+      <a href="#indir">Uygulamayı indir</a>
       <a href="#sss">SSS</a>
       <a href="https://github.com/bayramavci46/ekran0">Kaynak kodu (GitHub)</a>
     </nav>
@@ -72,7 +79,7 @@
       <div class="hero-copy">
         <p class="eyebrow"><span class="bracket" aria-hidden="true">[</span>Ekran + Kamera Kurgu Masası</p>
         <h1 id="heroTitle">Ekran kaydınız ve kameranız, tek videoda.</h1>
-        <p class="lead">Ekranınızı ve kameranızı aynı anda kaydedin ya da hazır iki kaydı bırakın; kamera penceresini istediğiniz yere taşıyıp boyutlandırın, MP4 olarak indirin. Hepsi bilgisayarınızda olur; videolarınız hiçbir sunucuya gitmez.</p>
+        <p class="lead">Ekranınızı ve kameranızı aynı anda kaydedin ya da hazır iki kaydı bırakın; kamera penceresini istediğiniz yere taşıyıp boyutlandırın, MP4 olarak indirin. Hepsi cihazınızda olur; videolarınız hiçbir sunucuya gitmez.</p>
         <div class="hero-actions">
           <a class="btn btn-primary btn-lg" href="editor.html">
             Editörü aç
@@ -80,7 +87,7 @@
           </a>
           <a class="btn btn-ghost btn-lg" id="heroDownload" href="#indir">
             <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
-            <span id="heroDownloadText">Masaüstü uygulaması</span>
+            <span id="heroDownloadText">Uygulamayı indir</span>
           </a>
         </div>
         <div class="hero-meta">
@@ -299,11 +306,11 @@
         </article>
 
         <article class="card card-browsers" aria-labelledby="browsersTitle">
-          <h3 id="browsersTitle">Tarayıcıda da, masaüstünde de.</h3>
+          <h3 id="browsersTitle">Tarayıcıda, masaüstünde, telefonda.</h3>
           <ul class="checklist">
             <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Chrome, Edge, Safari, Firefox</li>
-            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>iPhone ve iPad</li>
-            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg><a href="#indir">Windows ve Mac için masaüstü uygulaması</a></li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg><a href="#indir">Windows ve Mac uygulaması</a></li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg><a href="#indir">Android uygulaması, iPhone ve iPad'de ana ekran</a></li>
           </ul>
           <p class="card-meta" id="yourBrowser">Tarayıcınız kontrol ediliyor</p>
         </article>
@@ -358,15 +365,15 @@
     </div>
   </section>
 
-  <!-- Download: the same editor as a desktop app, for the visitor's system first. -->
+  <!-- Download: the same editor as desktop and phone apps, the visitor's system first. -->
   <section class="download" id="indir" aria-labelledby="downloadTitle">
     <div class="wrap">
       <div class="section-head section-head-split">
         <div>
-          <p class="eyebrow">Masaüstü uygulaması</p>
-          <h2 id="downloadTitle">Kendi penceresinde, internetsiz.</h2>
+          <p class="eyebrow">Uygulamalar</p>
+          <h2 id="downloadTitle">Bilgisayarda da, telefonda da.</h2>
         </div>
-        <p class="section-lead">Aynı editör, Windows ve Mac için uygulama olarak. Yazı tipleri ve kodlayıcılar içinde gelir; dışa aktarma her bilgisayarda hızlı yoldan yapılır.</p>
+        <p class="section-lead">Aynı editör Windows, Mac, Android, iPhone ve iPad için. Yazı tipleri ve kodlayıcılar içinde gelir; internet olmadan açılır, videolarınız cihazınızdan çıkmaz.</p>
       </div>
       <div class="download-grid">
         <div class="dl-app">
@@ -389,13 +396,13 @@
           </svg>
           <div class="dl-app-copy">
             <p class="dl-app-name">Kurgu Masası</p>
-            <p class="meta">Sürüm 1.1.0 · ücretsiz · hesap gerekmez</p>
+            <p class="meta">Sürüm 1.2.0 · ücretsiz · hesap gerekmez</p>
           </div>
           <ul class="checklist">
-            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>İnternet olmadan açılır, videolarınız bilgisayarınızdan çıkmaz</li>
-            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Ekranı ve kamerayı birlikte kaydeder; kaydı menü çubuğundan ya da görev çubuğundan durdurursunuz</li>
-            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Hızlı dışa aktarma ve sesten otomatik senkron her bilgisayarda</li>
-            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Sekmeler arasında kaybolmaz, kendi penceresinde çalışır</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>İnternet olmadan açılır, videolarınız cihazınızdan çıkmaz</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Bilgisayarda ekranı ve kamerayı birlikte kaydeder; kaydı menü çubuğundan ya da görev çubuğundan durdurursunuz</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Telefonda bitirdiğiniz videoyu paylaşım menüsünden Fotoğraflar'a, Galeri'ye ya da Dosyalar'a kaydedersiniz</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Hızlı dışa aktarma ve sesten otomatik senkron her cihazda</li>
           </ul>
         </div>
 
@@ -407,7 +414,7 @@
                 <h3 id="dlWinTitle">Windows</h3>
                 <p class="dl-req">Windows 10 ve 11 · 64 bit</p>
               </div>
-              <span class="dl-badge" hidden>Bu bilgisayar için</span>
+              <span class="dl-badge" hidden>Bu cihaz için</span>
             </div>
             <a class="btn btn-primary btn-lg dl-btn" href="https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Windows.exe" target="_blank" rel="noopener">
               <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
@@ -424,7 +431,7 @@
                 <h3 id="dlMacTitle">Mac</h3>
                 <p class="dl-req">macOS 12 ve sonrası · Apple Silicon ve Intel</p>
               </div>
-              <span class="dl-badge" hidden>Bu bilgisayar için</span>
+              <span class="dl-badge" hidden>Bu cihaz için</span>
             </div>
             <a class="btn btn-primary btn-lg dl-btn" href="https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Mac.dmg" target="_blank" rel="noopener">
               <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
@@ -433,9 +440,43 @@
             <p class="dl-file">Kurgu-Masasi-Mac.dmg · yaklaşık 230 MB · uygulamayı Uygulamalar klasörüne sürükleyin</p>
             <p class="dl-note"><svg class="i i-sm" aria-hidden="true"><use href="#i-info"/></svg><span>İlk açılışta "açılmadı" uyarısı çıkarsa <strong>Sistem Ayarları → Gizlilik ve Güvenlik</strong> bölümünde <strong>Yine de Aç</strong>'a basın. Bunu yalnızca bir kez yaparsınız.</span></p>
           </article>
+
+          <article class="dl-card" data-os="android" aria-labelledby="dlAndroidTitle">
+            <div class="dl-head">
+              <span class="dl-icon" aria-hidden="true"><svg class="i"><use href="#i-phone"/></svg></span>
+              <div>
+                <h3 id="dlAndroidTitle">Android</h3>
+                <p class="dl-req">Android 7 ve sonrası · telefon ve tablet</p>
+              </div>
+              <span class="dl-badge" hidden>Bu cihaz için</span>
+            </div>
+            <a class="btn btn-primary btn-lg dl-btn" href="https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Android.apk" target="_blank" rel="noopener">
+              <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
+              Android için indir
+            </a>
+            <p class="dl-file">Kurgu-Masasi-Android.apk · yaklaşık 6 MB · Google Play gerekmez</p>
+            <p class="dl-note"><svg class="i i-sm" aria-hidden="true"><use href="#i-info"/></svg><span>İndirilen dosyayı açın. Telefon izin isterse <strong>Bu kaynaktan izin ver</strong>'i açıp <strong>Yükle</strong>'ye dokunun. Uygulama henüz Google Play'de olmadığı için bu izin bir kez istenir.</span></p>
+          </article>
+
+          <article class="dl-card" data-os="ios" aria-labelledby="dlIosTitle">
+            <div class="dl-head">
+              <span class="dl-icon" aria-hidden="true"><svg class="i"><use href="#i-phone"/></svg></span>
+              <div>
+                <h3 id="dlIosTitle">iPhone ve iPad</h3>
+                <p class="dl-req">iOS 16 ve sonrası · Safari ile</p>
+              </div>
+              <span class="dl-badge" hidden>Bu cihaz için</span>
+            </div>
+            <a class="btn btn-primary btn-lg dl-btn" href="editor.html">
+              <svg class="i" aria-hidden="true"><use href="#i-phone"/></svg>
+              Editörü aç ve ana ekrana ekle
+            </a>
+            <p class="dl-file">Kurulum dosyası gerekmez · internetsiz de açılır</p>
+            <p class="dl-note"><svg class="i i-sm" aria-hidden="true"><use href="#i-info"/></svg><span>Editörü Safari'de açın, <strong>Paylaş</strong> düğmesine dokunun ve <strong>Ana Ekrana Ekle</strong>'yi seçin. Kurgu Masası ana ekranda kendi simgesiyle, uygulama gibi açılır. App Store'da henüz yok.</span></p>
+          </article>
         </div>
       </div>
-      <p class="download-meta"><a href="https://github.com/bayramavci46/ekran0/releases" target="_blank" rel="noopener">Tüm sürümler ve değişiklikler</a> · Başka bir cihazdaysanız <a href="editor.html">editörü tarayıcıda açın</a>.</p>
+      <p class="download-meta"><a href="https://github.com/bayramavci46/ekran0/releases" target="_blank" rel="noopener">Tüm sürümler ve değişiklikler</a> (iPhone için imzasız <code>.ipa</code> dosyası da orada; AltStore ya da Sideloadly ile yüklenir) · Kurmadan denemek için <a href="editor.html">editörü tarayıcıda açın</a>.</p>
     </div>
   </section>
 
@@ -473,8 +514,8 @@
           <div class="acc-panel" id="faq7" role="region" aria-labelledby="faq7b" hidden><div><p>İki kayıt yüklenince editör ilk iki dakikalarının sesini dinler ve sesin aniden yükseldiği anları (heceler, el çırpması, tuş sesleri) karşılaştırır. En iyi örtüşen kayma uygulanır ve tek tıkla geri alınabilir. Emin olamazsa yalnızca öneri sunar, hiçbir şeyi değiştirmez. Bütün bunlar bilgisayarınızda olur.</p></div></div>
         </div>
         <div class="acc-item">
-          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq5" id="faq5b">iPhone'da çalışır mı?<span class="acc-icon" aria-hidden="true"></span></button></h3>
-          <div class="acc-panel" id="faq5" role="region" aria-labelledby="faq5b" hidden><div><p>Evet, Safari'de açılır. iPhone, önizlemede ses düzeyinin değiştirilmesine izin vermez; seçtiğiniz düzey dışa aktarılan videoya yine uygulanır.</p></div></div>
+          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq5" id="faq5b">Telefonda nasıl kullanırım?<span class="acc-icon" aria-hidden="true"></span></button></h3>
+          <div class="acc-panel" id="faq5" role="region" aria-labelledby="faq5b" hidden><div><p>Android'de <a href="#indir">Android uygulamasını</a> indirip kurun. iPhone ve iPad'de editörü Safari'de açın, <strong>Paylaş → Ana Ekrana Ekle</strong> ile ana ekrana ekleyin; uygulama gibi, internetsiz de açılır. Ekranı telefonun kendi ekran kaydıyla, kendinizi kamerayla kaydedip ikisini editörde açın. Bitirdiğiniz videoyu <strong>Kaydet ya da paylaş</strong> düğmesiyle Fotoğraflar'a, Galeri'ye ya da Dosyalar'a kaydedersiniz. iPhone, önizlemede ses düzeyinin değiştirilmesine izin vermez; seçtiğiniz düzey dışa aktarılan videoya yine uygulanır.</p></div></div>
         </div>
         <div class="acc-item">
           <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq6" id="faq6b">Uzun kayıtlarda sorun olur mu?<span class="acc-icon" aria-hidden="true"></span></button></h3>
@@ -499,7 +540,7 @@
         </a>
         <a class="btn btn-on-dark btn-lg" href="#indir">
           <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
-          Masaüstü uygulaması
+          Uygulamayı indir
         </a>
       </div>
       </div>
@@ -528,7 +569,7 @@
     <nav class="footer-col" aria-label="Ürün">
       <p class="footer-title">Ürün</p>
       <a href="editor.html">Editörü aç</a>
-      <a href="#indir">Masaüstü uygulaması</a>
+      <a href="#indir">Uygulamalar</a>
       <a href="#nasil">Nasıl çalışır</a>
       <a href="#ozellikler">Özellikler</a>
       <a href="#sss">SSS</a>
@@ -656,6 +697,7 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-dash" viewBox="0 0 24 24"><path d="M7 12h10"/></symbol>
   <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5c0 3.6-2.4 6.5-6 6.5-2.4 0-3.8-1-5.2-3L4.6 14.2a1.6 1.6 0 0 1 2.4-2L9 14"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
   <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
   <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M10 12.5v5l4-2.5z"/></symbol>
@@ -673,5 +715,6 @@
 <script src="site/js/features.js"></script>
 <script src="site/js/download.js"></script>
 <script src="site/js/main.js"></script>
+<script src="js/offline.js"></script>
 </body>
 </html>

@@ -66,6 +66,9 @@ export function bundleApp({ out, fonts, page, name = 'editor.html', extra = {} }
     if (!pattern.test(html)) throw new Error(`editor.html: ${pattern} not found`);
     html = html.replace(pattern, replacement);
   };
+  // The installable website's manifest and service worker have no use in an app.
+  replace(/\s*<!-- Installable app[\s\S]*?<!-- \/installable -->/, '');
+  replace(/\s*<script src="js\/offline\.js"><\/script>/, '');
   replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com">/, '');
   replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin>/, '');
   replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/[^"]+">/, '<link rel="stylesheet" href="css/fonts.css">');
