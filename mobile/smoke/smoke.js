@@ -90,9 +90,12 @@
       }
     }],
     ['encodes video', 45, async (notes) => {
-      const config = { codec: VIDEO[plan.videoCodec], width: size.width, height: size.height, bitrate: 2e6, framerate: 30 };
+      const config = {
+        codec: VIDEO[plan.videoCodec], width: size.width, height: size.height, bitrate: 2e6, framerate: 30,
+        hardwareAcceleration: plan.videoAcceleration,
+      };
       if (plan.videoCodec === 'avc') config.avc = { format: 'avc' };
-      Object.assign(notes, { codec: config.codec, sent: 0, chunks: 0, dequeued: 0, queue: 0 });
+      Object.assign(notes, { codec: config.codec, acceleration: config.hardwareAcceleration, sent: 0, chunks: 0, dequeued: 0, queue: 0 });
       notes.supported = (await VideoEncoder.isConfigSupported(config)).supported;
       const encoder = new VideoEncoder({
         output: () => notes.chunks++,
@@ -197,7 +200,7 @@
     const formats = await PE.exporter.detectFormats();
     const plan = await PE.exporter.plan(job);
     check('export plan', plan.method !== 'none', {
-      method: plan.method, video: plan.videoCodec || null, audio: plan.audioCodec || null,
+      method: plan.method, video: plan.videoCodec || null, acceleration: plan.videoAcceleration || null, audio: plan.audioCodec || null,
       size: `${job.output.width}x${job.output.height}`, formats: formats.map((f) => f.label), reasons: plan.reasons,
     });
     const MB = await PE.exporter.getMediabunny();
