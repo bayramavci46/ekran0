@@ -10,6 +10,7 @@ name: Uygulamalar
 on:
   push:
     tags: ['v*']
+    branches: ['mobil-uygulama'] # GEÇİCİ: birleştirmeden önce kaldırılacak
   workflow_dispatch:
     inputs:
       release:
