@@ -28,6 +28,7 @@
       <a href="#nasil">Nasıl çalışır</a>
       <a href="#ozellikler">Özellikler</a>
       <a href="#gizlilik">Gizlilik</a>
+      <a href="#indir">İndir</a>
       <a href="#sss">SSS</a>
       <span class="nav-indicator" aria-hidden="true"></span>
     </nav>
@@ -56,6 +57,7 @@
       <a href="#nasil">Nasıl çalışır</a>
       <a href="#ozellikler">Özellikler</a>
       <a href="#gizlilik">Gizlilik</a>
+      <a href="#indir">Masaüstü uygulamasını indir</a>
       <a href="#sss">SSS</a>
       <a href="https://github.com/bayramavci46/ekran0">Kaynak kodu (GitHub)</a>
     </nav>
@@ -76,7 +78,10 @@
             Editörü aç
             <svg class="i i-move" aria-hidden="true"><use href="#i-arrow"/></svg>
           </a>
-          <a class="btn btn-ghost btn-lg" href="#nasil">Nasıl çalışır</a>
+          <a class="btn btn-ghost btn-lg" id="heroDownload" href="#indir">
+            <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
+            <span id="heroDownloadText">Masaüstü uygulaması</span>
+          </a>
         </div>
         <div class="hero-meta">
           <div class="pop-anchor">
@@ -266,11 +271,11 @@
         </article>
 
         <article class="card card-browsers" aria-labelledby="browsersTitle">
-          <h3 id="browsersTitle">Her tarayıcıda, internetsiz de.</h3>
+          <h3 id="browsersTitle">Tarayıcıda da, masaüstünde de.</h3>
           <ul class="checklist">
             <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Chrome, Edge, Safari, Firefox</li>
             <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>iPhone ve iPad</li>
-            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Tek dosya olarak indirip internetsiz açılır</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg><a href="#indir">Windows ve Mac için masaüstü uygulaması</a></li>
           </ul>
           <p class="card-meta" id="yourBrowser">Tarayıcınız kontrol ediliyor</p>
         </article>
@@ -295,7 +300,7 @@
       <div class="privacy-copy">
         <p class="eyebrow">Gizlilik</p>
         <h2 id="privacyTitle">Videolarınız bilgisayarınızdan çıkmaz.</h2>
-        <p>Kurgu Masası bir web sayfası gibi açılır ama bir masaüstü programı gibi çalışır. Kayıtlarınız tarayıcının içinde çözülür, birleştirilir ve yeniden kodlanır. Sunucu yok, hesap yok, yükleme kuyruğu yok.</p>
+        <p>Kurgu Masası ister tarayıcıda ister masaüstü uygulamasında açılsın, kayıtlarınız bilgisayarınızın içinde çözülür, birleştirilir ve yeniden kodlanır. Sunucu yok, hesap yok, yükleme kuyruğu yok.</p>
         <dl class="facts">
           <div><dt>Gönderilen veri</dt><dd>0 bayt</dd></div>
           <div><dt>Hesap</dt><dd>Gerekmez</dd></div>
@@ -325,6 +330,86 @@
     </div>
   </section>
 
+  <!-- Download: the same editor as a desktop app, for the visitor's system first. -->
+  <section class="download" id="indir" aria-labelledby="downloadTitle">
+    <div class="wrap">
+      <div class="section-head section-head-split">
+        <div>
+          <p class="eyebrow">Masaüstü uygulaması</p>
+          <h2 id="downloadTitle">Kendi penceresinde, internetsiz.</h2>
+        </div>
+        <p class="section-lead">Aynı editör, Windows ve Mac için uygulama olarak. Yazı tipleri ve kodlayıcılar içinde gelir; dışa aktarma her bilgisayarda hızlı yoldan yapılır.</p>
+      </div>
+      <div class="download-grid">
+        <div class="dl-app">
+          <svg class="dl-app-icon" viewBox="100 100 824 824" role="img" aria-label="Kurgu Masası uygulama simgesi">
+            <defs>
+              <linearGradient id="icTile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2a2f"/><stop offset="1" stop-color="#0a1012"/></linearGradient>
+              <linearGradient id="icScreen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a434a"/><stop offset="1" stop-color="#132024"/></linearGradient>
+              <linearGradient id="icRoom" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a4433"/><stop offset="1" stop-color="#1c1612"/></linearGradient>
+              <clipPath id="icCam"><circle cx="706" cy="652" r="150"/></clipPath>
+            </defs>
+            <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#icTile)"/>
+            <rect x="186" y="246" width="652" height="446" rx="44" fill="url(#icScreen)"/>
+            <circle cx="232" cy="278" r="11" fill="#e06c5b"/><circle cx="266" cy="278" r="11" fill="#e2b14f"/><circle cx="300" cy="278" r="11" fill="#6cc28a"/>
+            <rect x="236" y="364" width="96" height="26" rx="13" fill="#e8962a"/><rect x="352" y="364" width="190" height="26" rx="13" fill="#c9d3d1" fill-opacity=".85"/>
+            <rect x="286" y="424" width="150" height="26" rx="13" fill="#6fb8b0"/><rect x="456" y="424" width="110" height="26" rx="13" fill="#c9d3d1" fill-opacity=".6"/>
+            <rect x="286" y="484" width="120" height="26" rx="13" fill="#e2b86b"/><rect x="236" y="544" width="160" height="26" rx="13" fill="#6f8381"/>
+            <circle cx="706" cy="652" r="150" fill="url(#icRoom)"/>
+            <g clip-path="url(#icCam)"><circle cx="706" cy="612" r="50" fill="#0f0b09"/><path d="M594 812c8-78 54-126 112-126s104 48 112 126z" fill="#0f0b09"/></g>
+            <circle cx="706" cy="652" r="150" fill="none" stroke="#f0a73a" stroke-width="16"/>
+          </svg>
+          <div class="dl-app-copy">
+            <p class="dl-app-name">Kurgu Masası</p>
+            <p class="meta">Sürüm 1.0.0 · ücretsiz · hesap gerekmez</p>
+          </div>
+          <ul class="checklist">
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>İnternet olmadan açılır, videolarınız bilgisayarınızdan çıkmaz</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Hızlı dışa aktarma ve sesten otomatik senkron her bilgisayarda</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Sekmeler arasında kaybolmaz, kendi penceresinde çalışır</li>
+          </ul>
+        </div>
+
+        <div class="dl-cards">
+          <article class="dl-card" data-os="win" aria-labelledby="dlWinTitle">
+            <div class="dl-head">
+              <span class="dl-icon" aria-hidden="true"><svg class="i"><use href="#i-monitor"/></svg></span>
+              <div>
+                <h3 id="dlWinTitle">Windows</h3>
+                <p class="dl-req">Windows 10 ve 11 · 64 bit</p>
+              </div>
+              <span class="dl-badge" hidden>Bu bilgisayar için</span>
+            </div>
+            <a class="btn btn-primary btn-lg dl-btn" href="https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Windows.exe">
+              <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
+              Windows için indir
+            </a>
+            <p class="dl-file">Kurgu-Masasi-Windows.exe · tek tıkla kurulur, yönetici izni istemez</p>
+            <p class="dl-note"><svg class="i i-sm" aria-hidden="true"><use href="#i-info"/></svg><span>İlk açılışta "Windows kişisel bilgisayarınızı korudu" uyarısı çıkarsa <strong>Ek bilgi</strong>'ye, sonra <strong>Yine de çalıştır</strong>'a tıklayın. Uygulama henüz bir geliştirici sertifikasıyla imzalanmadığı için bu uyarı çıkar.</span></p>
+          </article>
+
+          <article class="dl-card" data-os="mac" aria-labelledby="dlMacTitle">
+            <div class="dl-head">
+              <span class="dl-icon" aria-hidden="true"><svg class="i"><use href="#i-laptop"/></svg></span>
+              <div>
+                <h3 id="dlMacTitle">Mac</h3>
+                <p class="dl-req">macOS 12 ve sonrası · Apple Silicon ve Intel</p>
+              </div>
+              <span class="dl-badge" hidden>Bu bilgisayar için</span>
+            </div>
+            <a class="btn btn-primary btn-lg dl-btn" href="https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Mac.dmg">
+              <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
+              Mac için indir
+            </a>
+            <p class="dl-file">Kurgu-Masasi-Mac.dmg · uygulamayı Uygulamalar klasörüne sürükleyin</p>
+            <p class="dl-note"><svg class="i i-sm" aria-hidden="true"><use href="#i-info"/></svg><span>İlk açılışta "açılmadı" uyarısı çıkarsa <strong>Sistem Ayarları → Gizlilik ve Güvenlik</strong> bölümünde <strong>Yine de Aç</strong>'a basın. Bunu yalnızca bir kez yaparsınız.</span></p>
+          </article>
+        </div>
+      </div>
+      <p class="download-meta"><a href="https://github.com/bayramavci46/ekran0/releases">Tüm sürümler ve değişiklikler</a> · Başka bir cihazdaysanız <a href="editor.html">editörü tarayıcıda açın</a>.</p>
+    </div>
+  </section>
+
   <!-- FAQ -->
   <section class="faq" id="sss" aria-labelledby="faqTitle">
     <div class="wrap faq-grid">
@@ -336,7 +421,11 @@
       <div class="accordion" id="faqList">
         <div class="acc-item">
           <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq1" id="faq1b">Ücretli mi, hesap açmam gerekir mi?<span class="acc-icon" aria-hidden="true"></span></button></h3>
-          <div class="acc-panel" id="faq1" role="region" aria-labelledby="faq1b" hidden><div><p>Hayır. Kurgu Masası ücretsiz ve açık kaynaklı. Hesap, kayıt ya da kurulum yok; sayfayı açıp kullanırsınız.</p></div></div>
+          <div class="acc-panel" id="faq1" role="region" aria-labelledby="faq1b" hidden><div><p>Hayır. Kurgu Masası ücretsiz ve açık kaynaklı. Hesap ya da kayıt yok; sayfayı açıp kullanırsınız. İsterseniz masaüstü uygulamasını indirip kurabilirsiniz.</p></div></div>
+        </div>
+        <div class="acc-item">
+          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq8" id="faq8b">Masaüstü uygulamasının tarayıcıdan farkı ne?<span class="acc-icon" aria-hidden="true"></span></button></h3>
+          <div class="acc-panel" id="faq8" role="region" aria-labelledby="faq8b" hidden><div><p>Editör aynı. Masaüstü uygulaması internet olmadan açılır, kendi penceresinde çalışır ve kendi kodlayıcılarıyla gelir; bu yüzden dışa aktarma her bilgisayarda hızlı yoldan yapılır, Mac'te de. Tarayıcı sürümü ise hiçbir şey kurmadan açılır. İlk açılıştaki uyarı, uygulamanın henüz bir geliştirici sertifikasıyla imzalanmamasındandır; indirme kartlarında nasıl geçileceği yazıyor.</p></div></div>
         </div>
         <div class="acc-item">
           <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq2" id="faq2b">Videolarım bir yere yükleniyor mu?<span class="acc-icon" aria-hidden="true"></span></button></h3>
@@ -373,15 +462,15 @@
       <div class="endcard-copy">
       <p class="endcard-tc"><span id="endTc">00:00:00:00</span><span class="bracket" aria-hidden="true">]</span> Çıkış</p>
       <h2 id="endTitle">Kaydı bırakın, gerisini masaya bırakın.</h2>
-      <p class="endcard-lead">Kurulum yok, hesap yok. Editörü açın, ilk videonuzu birkaç dakikada çıkarın.</p>
+      <p class="endcard-lead">Hesap yok, ücret yok. Editörü tarayıcıda açın ya da masaüstü uygulamasını indirin; ilk videonuz birkaç dakikada hazır.</p>
       <div class="endcard-actions">
         <a class="btn btn-primary btn-lg" href="editor.html">
           Editörü aç
           <svg class="i i-move" aria-hidden="true"><use href="#i-arrow"/></svg>
         </a>
-        <a class="btn btn-on-dark btn-lg" href="https://github.com/bayramavci46/ekran0">
-          <svg class="i" aria-hidden="true"><use href="#i-github"/></svg>
-          Kaynak kodu
+        <a class="btn btn-on-dark btn-lg" href="#indir">
+          <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
+          Masaüstü uygulaması
         </a>
       </div>
       </div>
@@ -410,6 +499,7 @@
     <nav class="footer-col" aria-label="Ürün">
       <p class="footer-title">Ürün</p>
       <a href="editor.html">Editörü aç</a>
+      <a href="#indir">Masaüstü uygulaması</a>
       <a href="#nasil">Nasıl çalışır</a>
       <a href="#ozellikler">Özellikler</a>
       <a href="#sss">SSS</a>
@@ -531,6 +621,9 @@
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></symbol>
+  <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-dash" viewBox="0 0 24 24"><path d="M7 12h10"/></symbol>
   <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5c0 3.6-2.4 6.5-6 6.5-2.4 0-3.8-1-5.2-3L4.6 14.2a1.6 1.6 0 0 1 2.4-2L9 14"/></symbol>
@@ -549,6 +642,7 @@
 <script src="site/js/compat.js"></script>
 <script src="site/js/how.js"></script>
 <script src="site/js/features.js"></script>
+<script src="site/js/download.js"></script>
 <script src="site/js/main.js"></script>
 </body>
 </html>

@@ -27,6 +27,8 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 
 ## Nasıl açılır
 
+- **Masaüstü uygulaması:** Windows ve Mac için kurulum dosyaları aşağıdaki
+  [Masaüstü uygulaması](#masaüstü-uygulaması) bölümünde.
 - **En kolayı:** `editor.html` dosyasına çift tıklayın. Chrome ya da Edge önerilir.
   `index.html` ürünün tanıtım sitesidir; oradaki **Editörü aç** düğmesi de editöre götürür.
 - **Tek dosya:** `npm run build` komutu `dist/ekran-kamera-kurgu.html` dosyasını üretir. Bu dosya her yere
@@ -36,6 +38,24 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 - **iPhone ve iPad:** Dosyalar uygulamasından açılan HTML dosyası çalışmaz, uygulamayı bir web adresinden açın.
   GitHub Pages bunun için yeterli: depo ayarlarında **Pages** bölümünde kaynak olarak `main` dalını ve `/ (root)`
   klasörünü seçin; birkaç dakika sonra uygulama `https://<kullanıcı-adı>.github.io/<depo-adı>/` adresinde açılır.
+
+## Masaüstü uygulaması
+
+Editör, Windows ve Mac için uygulama olarak da var. Aynı editördür; internet olmadan açılır, kendi penceresinde
+çalışır ve kendi kodlayıcılarıyla geldiği için dışa aktarmayı her bilgisayarda hızlı yoldan yapar.
+
+- **Windows 10 ve 11 (64 bit):** [Kurgu-Masasi-Windows.exe](https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Windows.exe).
+  Tek tıkla kurulur, yönetici izni istemez.
+- **macOS 12 ve sonrası (Apple Silicon ve Intel):** [Kurgu-Masasi-Mac.dmg](https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Mac.dmg).
+  Açın ve uygulamayı Uygulamalar klasörüne sürükleyin.
+
+Uygulama henüz bir geliştirici sertifikasıyla imzalanmadığı için ilk açılışta sistem uyarır:
+
+- **Windows:** "Windows kişisel bilgisayarınızı korudu" penceresinde **Ek bilgi**, sonra **Yine de çalıştır**.
+- **Mac:** "açılmadı" uyarısı çıkarsa **Sistem Ayarları → Gizlilik ve Güvenlik** bölümünde **Yine de Aç**.
+
+Bu uyarıları kaldırmak için Windows'ta bir kod imzalama sertifikası, Mac'te Apple Developer Programı üyeliği
+(Developer ID ile imzalama ve notarization) gerekir. İkisi de derleme iş akışına sonradan eklenebilir.
 
 ## Kullanım
 
@@ -79,7 +99,8 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 
 ## Geliştirme
 
-Derleme adımı ve bağımlılık yoktur; dosyalar doğrudan tarayıcıda çalışır.
+Web sürümünün derleme adımı ve bağımlılığı yoktur; dosyalar doğrudan tarayıcıda çalışır. Masaüstü uygulaması
+`desktop/` klasöründe ayrı bir npm projesidir.
 
 ```
 index.html            tanıtım sitesi
@@ -99,6 +120,8 @@ js/export.js          dışa aktarma: hızlı yol (Mediabunny + WebCodecs) ve ge
 js/demo.js            hiç kayıt yüklenmemişken gösterilen örnek görüntü
 js/app.js             durum, kontroller, geri al/yinele, tercihler
 vendor/               Mediabunny 1.60.0 (MPL-2.0, lisans metni klasörde)
+desktop/              masaüstü uygulaması (Electron): pencere, menüler, kurulum ayarları, simge
+.github/workflows/    Windows ve Mac kurulum dosyalarını derleyip yayımlayan iş akışı
 ```
 
 - `npm test` — birim testleri (Node 18 ve üzeri), otomatik senkron için yankılı, gürültülü ve farklı
@@ -107,3 +130,21 @@ vendor/               Mediabunny 1.60.0 (MPL-2.0, lisans metni klasörde)
   senkronun kaydırmayı bulduğunu denetler, kamerayı taşır ve boyutlandırır, dışa aktarır ve sonucu `ffprobe` ile
   denetler. ffmpeg ve Playwright gerektirir.
 - `npm run build` — tek dosyalık sürüm (`--cdn` ile Mediabunny'yi jsDelivr'den yükleyen küçük sürüm).
+
+### Masaüstü uygulamasını derlemek
+
+```
+cd desktop
+npm install
+npm start          # uygulamayı açar
+npm run dist       # bu işletim sistemi için kurulum dosyası, desktop/dist içine
+npm run smoke      # paketlenmiş uygulamayı açıp denetler
+```
+
+`npm run dist` önce editörü `desktop/app` içine kopyalar: yazı tipleri uygulamaya gömülür ve sayfa yalnızca kendi
+dosyalarını yükleyebilir. `npm run smoke`, paketlenmiş uygulamayı gizli olarak açar; bilgisayarın kendi
+kodlayıcılarıyla iki deneme kaydı üretir, otomatik senkronu çalıştırır ve iki saniyelik bir dışa aktarma yapar.
+
+Yeni sürüm yayımlamak için `desktop/package.json` içindeki sürümü artırın ve `v` ile başlayan bir etiket gönderin
+(ör. `git tag v1.0.1 && git push origin v1.0.1`). GitHub Actions Windows ve Mac kurulum dosyalarını derler, ikisini de
+açıp dener ve bir sürüm olarak yayımlar. Sitedeki indirme bağlantıları her zaman en son sürümü indirir.

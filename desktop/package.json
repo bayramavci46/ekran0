@@ -24,7 +24,6 @@
   "build": {
     "appId": "io.github.bayramavci46.kurgumasasi",
     "productName": "Kurgu Masası",
-    "executableName": "KurguMasasi",
     "copyright": "© 2026 Bayram Avcı",
     "directories": {
       "output": "dist",
@@ -67,6 +66,7 @@
         }
       ],
       "icon": "build/icon-win.png",
+      "executableName": "KurguMasasi",
       "artifactName": "Kurgu-Masasi-Windows.${ext}"
     },
     "nsis": {
@@ -87,7 +87,8 @@
       "target": [
         "dir"
       ],
-      "category": "AudioVideo"
+      "category": "AudioVideo",
+      "executableName": "kurgumasasi"
     },
     "publish": null
   }

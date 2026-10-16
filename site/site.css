@@ -1600,6 +1600,200 @@ h3 {
   color: var(--faint);
 }
 
+/* ---- Download -------------------------------------------------------------------------------- */
+
+.download {
+  padding-block: clamp(72px, 10vw, 140px);
+  border-top: 1px solid var(--line);
+}
+
+.download-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.dl-app {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  padding: clamp(20px, 2.4vw, 28px);
+}
+
+.dl-app-icon {
+  width: 132px;
+  height: 132px;
+  filter: drop-shadow(0 18px 30px rgba(17, 26, 28, 0.32));
+}
+
+.dl-app-name {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.dl-app-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.dl-cards {
+  display: grid;
+  gap: 16px;
+}
+
+.dl-card {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: clamp(20px, 2.4vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--surface);
+  transition: border-color var(--t-3) var(--ease), box-shadow var(--t-3) var(--ease);
+}
+
+.dl-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-1);
+}
+
+/* The visitor's own system comes first. */
+.dl-card.is-recommended {
+  order: -1;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.dl-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dl-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--monitor);
+  color: var(--mark);
+}
+
+.dl-icon .i {
+  width: 24px;
+  height: 24px;
+}
+
+.dl-head h3 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1.05;
+}
+
+.dl-req {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.dl-badge {
+  margin-left: auto;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  white-space: nowrap;
+}
+
+.dl-btn {
+  justify-self: start;
+}
+
+.dl-file {
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  color: var(--faint);
+}
+
+.dl-note {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.dl-note .i {
+  margin-top: 3px;
+  color: var(--accent-text);
+}
+
+.dl-note strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.download-meta {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.download-meta a,
+.checklist a {
+  color: var(--fg);
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.download-meta a:hover,
+.checklist a:hover {
+  text-decoration-color: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .download-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dl-app {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    padding: 0 0 8px;
+  }
+
+  .dl-app-icon {
+    width: 88px;
+    height: 88px;
+  }
+
+  .dl-app .checklist {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .dl-head {
+    flex-wrap: wrap;
+  }
+
+  .dl-badge {
+    margin-left: 62px;
+  }
+
+  .dl-btn {
+    justify-self: stretch;
+  }
+}
+
 /* ---- FAQ ------------------------------------------------------------------------------------- */
 
 .faq {

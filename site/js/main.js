@@ -32,5 +32,6 @@
   KM.initNav();
   KM.popover(KM.$('#compatBtn'), KM.$('#compatPop'));
   KM.initCompat();
+  KM.initDownload();
   KM.accordion(KM.$('#faqList'));
 })(self);
