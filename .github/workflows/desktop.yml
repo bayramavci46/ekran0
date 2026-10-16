@@ -1,15 +1,24 @@
 # Builds the desktop app (desktop/) for Windows and macOS, starts each build once to check that
-# it really works (desktop/scripts/smoke.mjs), and for tags like v1.0.0 publishes the installers
-# as a GitHub release. The website links to releases/latest/download/<file name>.
+# it really works (desktop/scripts/smoke.mjs), and publishes the installers as a GitHub release:
+# for a pushed tag like v1.0.0, or when run by hand with a version. The website links to
+# releases/latest/download/<file name>.
 name: Masaüstü uygulaması
 
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release:
+        description: Yayımlanacak sürüm, ör. 1.0.0 (desktop/package.json ile aynı). Boş bırakılırsa yalnızca derlenip denenir.
+        required: false
+        default: ''
 
 permissions:
   contents: write
+
+env:
+  RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release }}
 
 concurrency:
   group: desktop-${{ github.ref }}
@@ -45,6 +54,9 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
+      - name: Check that the release matches the app version
+        if: env.RELEASE != ''
+        run: node -e "const v = require('./package.json').version; if (v !== process.env.RELEASE.replace(/^v/, '')) { console.error('desktop/package.json has ' + v + ', the release is ' + process.env.RELEASE); process.exit(1); }"
       - run: npm ci
       - name: Build the installer
         run: npm run dist -- ${{ matrix.target }}
@@ -59,7 +71,7 @@ jobs:
   release:
     name: Release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -69,8 +81,8 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
         run: |
+          TAG="v${RELEASE#v}"
           cat > notes.md <<'NOTES'
           Ekran kaydı ile kamera kaydını tek videoda birleştiren Kurgu Masası, masaüstü uygulaması olarak.
           Videolarınız bilgisayarınızdan çıkmaz; uygulama internet olmadan da çalışır.
@@ -84,5 +96,6 @@ jobs:
           - Windows: "Windows kişisel bilgisayarınızı korudu" penceresinde **Ek bilgi**, sonra **Yine de çalıştır**.
           - Mac: Uygulamayı Uygulamalar klasörüne sürükleyip açın. "Açılmadı" uyarısı çıkarsa **Sistem Ayarları → Gizlilik ve Güvenlik** bölümünde **Yine de Aç** düğmesine basın.
           NOTES
+          # Creates the tag on the built commit when it does not exist yet.
           gh release create "$TAG" out/Kurgu-Masasi-Windows.exe out/Kurgu-Masasi-Mac.dmg \
-            --repo "$GITHUB_REPOSITORY" --title "Kurgu Masası ${TAG#v}" --notes-file notes.md
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Kurgu Masası ${TAG#v}" --notes-file notes.md
