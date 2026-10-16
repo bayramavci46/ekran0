@@ -1,7 +1,7 @@
 {
   "name": "kurgu-masasi",
   "productName": "Kurgu Masası",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Ekran kaydı ile kamera kaydını tek videoda birleştiren masaüstü video düzenleyici",
   "author": "Bayram Avcı",

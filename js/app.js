@@ -1015,7 +1015,7 @@
           target = null;
         }
       }
-      if (!target) target = exporter.memoryTarget();
+      if (!target) target = (await exporter.privateTarget(name)) || exporter.memoryTarget();
     }
 
     const controller = new AbortController();
@@ -1090,6 +1090,20 @@
     return downloadsCapability;
   }
 
+  /**
+   * On phones and tablets the browser can hand the video to the share sheet too (Save Video puts
+   * it in Photos on iPhone); returns the file to share, or null where downloading is the norm.
+   */
+  function sharableFile(blob, name) {
+    if (PE.native || typeof navigator.canShare !== 'function' || !matchMedia('(pointer: coarse)').matches) return null;
+    const file = new File([blob], name, { type: blob.type || 'video/mp4' });
+    try {
+      return navigator.canShare({ files: [file] }) ? file : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
   async function showResult(blob, name, onDisk) {
     const url = URL.createObjectURL(blob);
     state.result = { blob, name, url, onDisk };
@@ -1101,7 +1115,12 @@
     else els.resultText.append(strong, ` hazır (${U.bytes(blob.size)}).`);
     els.result.hidden = false;
     els.result.scrollIntoView({ block: 'nearest', behavior: KM.reducedMotion() ? 'auto' : 'smooth' });
-    KM.toast(onDisk ? `Kaydedildi · ${name}, ${U.bytes(blob.size)}` : `Video hazır · ${name}, ${U.bytes(blob.size)}`);
+    // In the phone app (and on phones) the video is handed to the share sheet: Save Video, Files, Drive…
+    const shares = !!PE.native || !!sharableFile(blob, name);
+    els.download.textContent = shares ? 'Kaydet ya da paylaş' : 'İndir';
+    KM.toast(onDisk ? `Kaydedildi · ${name}, ${U.bytes(blob.size)}` : `Video hazır · ${name}, ${U.bytes(blob.size)}`, {
+      action: shares ? { label: 'Kaydet', onClick: download } : null,
+    });
     const downloads = onDisk ? false : await getDownloads();
     els.download.hidden = onDisk || downloads === null;
     if (!onDisk && downloads === null) {
@@ -1109,9 +1128,39 @@
     }
   }
 
+  /** Hands a file to the phone's share sheet, showing the copying on the button. */
+  async function shareNative(blob, name, button) {
+    const label = button.textContent;
+    button.disabled = true;
+    try {
+      await PE.native.share(blob, name, (p) => { button.textContent = `Hazırlanıyor · ${U.percent(p)}`; });
+    } catch (err) {
+      console.error(err);
+      KM.toast(`Video paylaşılamadı: ${err && err.message ? err.message : err}`, { tone: 'warn' });
+    } finally {
+      button.textContent = label;
+      button.disabled = false;
+    }
+  }
+
   async function download() {
     const r = state.result;
     if (!r) return;
+    if (PE.native) {
+      await shareNative(r.blob, r.name, els.download);
+      return;
+    }
+    // Before anything else waits: the share sheet only opens straight from a tap.
+    const file = sharableFile(r.blob, r.name);
+    if (file) {
+      try {
+        await navigator.share({ files: [file], title: r.name });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        // Sharing was refused; download instead.
+      }
+    }
     const downloads = await getDownloads();
     if (downloads) {
       try {
@@ -1134,6 +1183,10 @@
     const m = state.media[slot];
     if (!m) return;
     const file = m.file;
+    if (PE.native) {
+      await shareNative(file, file.name, els.slots[slot].querySelector('[data-action="save"]'));
+      return;
+    }
     if (exporter.canPickFile()) {
       try {
         const handle = await exporter.pickFile(file.name, /\.webm$/i.test(file.name) ? 'webm' : 'mp4');
@@ -1668,7 +1721,15 @@
     state.autoSync = els.autoSyncOnLoad.checked;
     savePrefs();
   });
-  if (typeof ResizeObserver === 'function') new ResizeObserver(() => drawSyncScope()).observe(els.syncScope);
+  // Resize callbacks that change the observed element itself (the sync scope hides itself, the
+  // monitor sets its own height on phones) run in the next frame, or the browser reports a loop.
+  const onNextFrame = (fn) => {
+    let queued = 0;
+    return () => {
+      if (!queued) queued = requestAnimationFrame(() => { queued = 0; fn(); });
+    };
+  };
+  if (typeof ResizeObserver === 'function') new ResizeObserver(onNextFrame(drawSyncScope)).observe(els.syncScope);
 
   els.outRes.addEventListener('change', () => {
     state.output.preset = els.outRes.value;
@@ -1812,7 +1873,7 @@
     }
   });
 
-  if (typeof ResizeObserver === 'function') new ResizeObserver(() => fitFrame()).observe(els.monitor);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(onNextFrame(fitFrame)).observe(els.monitor);
   if (stacked.addEventListener) stacked.addEventListener('change', fitFrame);
   else stacked.addListener(fitFrame);
   window.addEventListener('resize', fitFrame);
@@ -1836,6 +1897,8 @@
   fitFrame();
   setMethodText(null);
 
+  // Videos a closed tab left behind in private storage.
+  exporter.forgetExports(6 * 3600 * 1000);
   exporter.detectFormats().then((formats) => {
     state.formats = formats;
     buildFormatOptions();

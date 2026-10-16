@@ -26,6 +26,9 @@ const inlineScript = (file) => {
 };
 
 let html = read(page);
+// One self-contained file has nothing to install or keep offline: no manifest, no service worker.
+html = html.replace(/\s*<!-- Installable app[\s\S]*?<!-- \/installable -->/, '');
+html = html.replace(/\s*<script src="js\/offline\.js"><\/script>/, '');
 html = html.replace(/<link rel="stylesheet" href="((?:css|site)\/[^"]+)">/g, (_, href) => `<style>\n${read(href)}</style>`);
 html = html.replace(/<script src="([^"]+)"><\/script>/g, (_, src) => {
   if (src.startsWith('vendor/mediabunny') && useCdn) {

@@ -34,6 +34,12 @@
   const codecName = (c) => (c ? CODEC_NAMES[c] || (c.startsWith('pcm') ? 'PCM' : c.toUpperCase()) : '');
   const abortError = () => new DOMException('Dışa aktarma iptal edildi.', 'AbortError');
 
+  /** Waits for `promise`, but not longer than `ms`. */
+  const settleWithin = (promise, ms) => Promise.race([
+    Promise.resolve(promise).catch(() => {}),
+    new Promise((resolve) => setTimeout(resolve, ms)),
+  ]);
+
   // ---- Mediabunny loading ------------------------------------------------
 
   let mediabunny = null;
@@ -54,6 +60,80 @@
   function quality(MB, level) {
     return { 'very-high': MB.QUALITY_VERY_HIGH, high: MB.QUALITY_HIGH, medium: MB.QUALITY_MEDIUM, low: MB.QUALITY_LOW }[level]
       || MB.QUALITY_HIGH;
+  }
+
+  // ---- Encoder trial -------------------------------------------------------
+
+  // Codec strings for the trial, which only asks whether frames come out at all.
+  const TRIAL_CODECS = { avc: 'avc1.64001f', hevc: 'hev1.1.6.L93.B0', vp9: 'vp09.00.31.08', vp8: 'vp8', av1: 'av01.0.04M.08' };
+  const ACCELERATION = ['no-preference', 'prefer-software'];
+  const trials = new Map();
+
+  /**
+   * Some browsers accept a video codec and then never return a frame (the iOS simulator does
+   * this with H.264 when it is left to pick the hardware encoder), which would leave the export
+   * at 0 %. A few frames are encoded once per codec, with the default and then with the software
+   * encoder, and the setting that works is kept for the session; null if neither does.
+   */
+  function videoEncoderSetting(codec) {
+    if (!trials.has(codec)) {
+      trials.set(codec, (async () => {
+        if (!TRIAL_CODECS[codec]) return ACCELERATION[0];
+        for (const acceleration of ACCELERATION) {
+          if (await tryVideoEncoder(codec, acceleration)) return acceleration;
+        }
+        return null;
+      })());
+    }
+    return trials.get(codec);
+  }
+
+  async function tryVideoEncoder(codec, hardwareAcceleration) {
+    let encoder = null;
+    try {
+      let chunks = 0;
+      let failed = false;
+      encoder = new root.VideoEncoder({ output: () => { chunks++; }, error: () => { failed = true; } });
+      const config = { codec: TRIAL_CODECS[codec], width: 320, height: 180, bitrate: 500000, framerate: 30, hardwareAcceleration };
+      if (codec === 'avc') config.avc = { format: 'avc' };
+      encoder.configure(config);
+      const canvas = document.createElement('canvas');
+      canvas.width = 320;
+      canvas.height = 180;
+      const ctx = canvas.getContext('2d');
+      for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = i % 2 ? '#f0a73a' : '#0c1112';
+        ctx.fillRect(0, 0, 320, 180);
+        const frame = new root.VideoFrame(canvas, { timestamp: Math.round((i * 1e6) / 30) });
+        encoder.encode(frame, { keyFrame: i === 0 });
+        frame.close();
+      }
+      await settleWithin(encoder.flush(), 4000);
+      return chunks > 0 && !failed;
+    } catch (err) {
+      return false;
+    } finally {
+      if (encoder && encoder.state !== 'closed') {
+        try {
+          encoder.close();
+        } catch (err) {
+          // Closed by its own error.
+        }
+      }
+    }
+  }
+
+  /**
+   * The first codec in `list` that the browser offers at `size` and really encodes with:
+   * { codec, acceleration } (the hardwareAcceleration setting to encode with), or null.
+   */
+  async function firstWorkingVideoCodec(MB, list, size) {
+    for (const codec of list) {
+      const offered = await MB.getFirstEncodableVideoCodec([codec], size).catch(() => null);
+      const acceleration = offered && (await videoEncoderSetting(offered));
+      if (acceleration) return { codec: offered, acceleration };
+    }
+    return null;
   }
 
   // ---- Probing -------------------------------------------------------------
@@ -94,11 +174,11 @@
     for (const [id, c] of Object.entries(CONTAINERS)) {
       let fast = null;
       if (MB && hasWebCodecs()) {
-        const video = await MB.getFirstEncodableVideoCodec(c.video, { width: 1280, height: 720 }).catch(() => null);
+        const video = await firstWorkingVideoCodec(MB, c.video, { width: 1280, height: 720 });
         const audio = hasAudioCodecs()
           ? await MB.getFirstEncodableAudioCodec(c.audio, { numberOfChannels: 2, sampleRate: AUDIO_RATE }).catch(() => null)
           : null;
-        if (video) fast = { video, audio };
+        if (video) fast = { video: video.codec, audio };
       }
       const realtime = realtimeType(id, true);
       if (fast || realtime) {
@@ -150,13 +230,15 @@
       const { width, height, fps } = job.output;
       const pick = async (id) => {
         const c = CONTAINERS[id];
-        const video = await MB.getFirstEncodableVideoCodec(c.video, { width, height, frameRate: fps }).catch(() => null);
+        const video = await firstWorkingVideoCodec(MB, c.video, { width, height, frameRate: fps });
         if (!video) return null;
         const audio = needsAudio
           ? await MB.getFirstEncodableAudioCodec(c.audio, { numberOfChannels: 2, sampleRate: AUDIO_RATE }).catch(() => null)
           : null;
         if (needsAudio && !audio) return null;
-        return { method: 'fast', container: id, videoCodec: video, audioCodec: audio, reasons: [] };
+        return {
+          method: 'fast', container: id, videoCodec: video.codec, videoAcceleration: video.acceleration, audioCodec: audio, reasons: [],
+        };
       };
       // Respect the chosen container first (fast, then real time), then try the other one.
       const wanted = job.output.format;
@@ -242,6 +324,48 @@
     };
   }
 
+  const EXPORTS = 'disa-aktarilan';
+
+  async function exportsFolder() {
+    const storage = root.navigator.storage;
+    if (!storage || typeof storage.getDirectory !== 'function') return null;
+    return (await storage.getDirectory()).getDirectoryHandle(EXPORTS, { create: true });
+  }
+
+  /**
+   * Where there is no save dialog (phones, the app, Firefox, Safari), the video goes to the
+   * browser's private storage instead of the memory, so long videos fit. Null if that is missing.
+   */
+  async function privateTarget(name) {
+    try {
+      const dir = await exportsFolder();
+      if (!dir) return null;
+      // One finished video is kept: the one on screen. An export still running elsewhere is locked.
+      for await (const old of dir.keys()) await dir.removeEntry(old).catch(() => {});
+      const handle = await dir.getFileHandle(name, { create: true });
+      if (typeof handle.createWritable !== 'function') return null;
+      const target = await diskTarget(handle);
+      return { ...target, finish: async (type) => new File([await handle.getFile()], name, { type }) };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  /** Removes videos a closed tab left in private storage. */
+  async function forgetExports(olderThan) {
+    try {
+      const dir = await exportsFolder();
+      if (!dir) return;
+      for await (const [name, handle] of dir.entries()) {
+        if (handle.kind === 'file' && Date.now() - (await handle.getFile()).lastModified > olderThan) {
+          await dir.removeEntry(name).catch(() => {});
+        }
+      }
+    } catch (err) {
+      // Nothing to clean up.
+    }
+  }
+
   const canPickFile = () => typeof root.showSaveFilePicker === 'function' && root.self === root.top;
 
   async function pickFile(name, container) {
@@ -253,7 +377,47 @@
 
   // ---- Fast export ---------------------------------------------------------
 
+  // A decoder or encoder that stops answering would leave the export waiting forever. Without
+  // progress for this long, the export ends with an error that offers the real-time export
+  // instead; cancelling ends it at once.
+  const STALL_MS = 30000;
+
   async function exportFast(job, chosen, { target, onProgress, signal }) {
+    const inner = new AbortController();
+    let stop = null;
+    const stopped = new Promise((resolve, reject) => { stop = reject; });
+    stopped.catch(() => {});
+    let timer = 0;
+    const end = (err) => {
+      stop(err);
+      inner.abort();
+      target.cancel();
+    };
+    const alive = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => end(new Error('Kodlayıcı 30 saniyedir yanıt vermiyor.')), STALL_MS);
+    };
+    const onAbort = () => end(abortError());
+    if (signal.aborted) throw abortError();
+    signal.addEventListener('abort', onAbort, { once: true });
+    alive();
+    try {
+      const work = encodeFast(job, chosen, {
+        target,
+        signal: inner.signal,
+        onProgress: (p) => {
+          alive();
+          onProgress(p);
+        },
+      });
+      return await Promise.race([work, stopped]);
+    } finally {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+    }
+  }
+
+  async function encodeFast(job, chosen, { target, onProgress, signal }) {
     const MB = await getMediabunny();
     const { width: W, height: H, fps } = job.output;
     const inputs = [];
@@ -292,6 +456,7 @@
         codec: chosen.videoCodec,
         quality: quality(MB, job.output.quality),
         keyFrameInterval: 2,
+        hardwareAcceleration: chosen.videoAcceleration,
       });
       output.addVideoTrack(videoSource, { frameRate: fps });
 
@@ -401,7 +566,7 @@
     } catch (err) {
       target.cancel();
       if (output && output.state !== 'finalized' && output.state !== 'canceled') {
-        await output.cancel().catch(() => {});
+        await settleWithin(output.cancel(), 2000);
       }
       throw err;
     } finally {
@@ -598,7 +763,10 @@
       });
       draw();
       recorder.stop();
-      await stopped;
+      // A recorder whose encoder stopped answering would never report that it stopped.
+      await Promise.race([stopped, new Promise((resolve, reject) => {
+        setTimeout(() => reject(new Error('Kayıt bitirilemedi; kodlayıcı yanıt vermiyor.')), 15000);
+      })]);
       const raw = new Blob(chunks, { type: chosen.mimeType.split(';')[0] });
       return { blob: await remux(raw, chosen.container), container: chosen.container };
     } finally {
@@ -612,7 +780,7 @@
 
   PE.exporter = {
     getMediabunny, analyzeFile, detectFormats, plan, codecName,
-    memoryTarget, diskTarget, canPickFile, pickFile, exportFast,
+    memoryTarget, diskTarget, privateTarget, forgetExports, canPickFile, pickFile, exportFast,
     prepareRealtime, disposeRealtime, exportRealtime,
   };
 })(self);

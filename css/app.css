@@ -1891,9 +1891,10 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 }
 
-/* Touch screens have no keyboard to take shortcuts from. */
+/* Touch screens have no keyboard to take shortcuts from, and no files to drag in. */
 @media (hover: none) and (pointer: coarse) {
-  .shortcuts-btn {
+  .shortcuts-btn,
+  .drop-drag {
     display: none;
   }
 
