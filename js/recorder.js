@@ -20,10 +20,13 @@
   const pad = (n) => String(n).padStart(2, '0');
   const stamp = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 
-  /** Whether this browser can capture the screen and encode while recording. */
+  /**
+   * Whether this browser can capture the screen and encode while recording. Not inside the phone
+   * app: there the system's own screen recorder takes the screen (see js/native.js).
+   */
   function supported() {
     const md = root.navigator && root.navigator.mediaDevices;
-    return !!(md && typeof md.getDisplayMedia === 'function' && typeof md.getUserMedia === 'function'
+    return !PE.native && !!(md && typeof md.getDisplayMedia === 'function' && typeof md.getUserMedia === 'function'
       && typeof root.VideoEncoder === 'function' && typeof root.AudioEncoder === 'function');
   }
 

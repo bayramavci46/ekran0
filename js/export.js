@@ -242,6 +242,48 @@
     };
   }
 
+  const EXPORTS = 'disa-aktarilan';
+
+  async function exportsFolder() {
+    const storage = root.navigator.storage;
+    if (!storage || typeof storage.getDirectory !== 'function') return null;
+    return (await storage.getDirectory()).getDirectoryHandle(EXPORTS, { create: true });
+  }
+
+  /**
+   * Where there is no save dialog (phones, the app, Firefox, Safari), the video goes to the
+   * browser's private storage instead of the memory, so long videos fit. Null if that is missing.
+   */
+  async function privateTarget(name) {
+    try {
+      const dir = await exportsFolder();
+      if (!dir) return null;
+      // One finished video is kept: the one on screen. An export still running elsewhere is locked.
+      for await (const old of dir.keys()) await dir.removeEntry(old).catch(() => {});
+      const handle = await dir.getFileHandle(name, { create: true });
+      if (typeof handle.createWritable !== 'function') return null;
+      const target = await diskTarget(handle);
+      return { ...target, finish: async (type) => new File([await handle.getFile()], name, { type }) };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  /** Removes videos a closed tab left in private storage. */
+  async function forgetExports(olderThan) {
+    try {
+      const dir = await exportsFolder();
+      if (!dir) return;
+      for await (const [name, handle] of dir.entries()) {
+        if (handle.kind === 'file' && Date.now() - (await handle.getFile()).lastModified > olderThan) {
+          await dir.removeEntry(name).catch(() => {});
+        }
+      }
+    } catch (err) {
+      // Nothing to clean up.
+    }
+  }
+
   const canPickFile = () => typeof root.showSaveFilePicker === 'function' && root.self === root.top;
 
   async function pickFile(name, container) {
@@ -612,7 +654,7 @@
 
   PE.exporter = {
     getMediabunny, analyzeFile, detectFormats, plan, codecName,
-    memoryTarget, diskTarget, canPickFile, pickFile, exportFast,
+    memoryTarget, diskTarget, privateTarget, forgetExports, canPickFile, pickFile, exportFast,
     prepareRealtime, disposeRealtime, exportRealtime,
   };
 })(self);

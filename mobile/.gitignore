@@ -1,0 +1,8 @@
+www/
+build/
+Payload/
+*.ipa
+*.apk
+smoke-*.png
+smoke-*.jpg
+*.log

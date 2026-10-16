@@ -1,0 +1,227 @@
+# Builds every app and publishes them together as one GitHub release:
+#  - desktop: the Windows and macOS installers (desktop/, Electron); each is started once and
+#    checks itself (desktop/scripts/smoke.mjs)
+#  - android: the APK (mobile/, Capacitor); a test build runs its in-app check in the emulator
+#  - ios: a test build runs the same check in the simulator; the .ipa is built unsigned
+# It publishes for a pushed tag like v1.2.0, or when run by hand with a version. The release text
+# comes from .github/release-notes.md. The website links to releases/latest/download/<file name>.
+name: Uygulamalar
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Yayımlanacak sürüm, ör. 1.2.0 (desktop/package.json ve mobile/package.json ile aynı). Boş bırakılırsa yalnızca derlenip denenir.
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release }}
+
+concurrency:
+  group: apps-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  desktop:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            target: --win
+            file: Kurgu-Masasi-Windows.exe
+          - name: macOS
+            os: macos-latest
+            target: --mac
+            file: Kurgu-Masasi-Mac.dmg
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: desktop
+    env:
+      # electron-builder downloads the Electron builds it packages; the dev binary is not needed.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Check that the release matches the app version
+        if: env.RELEASE != ''
+        run: node -e "const v = require('./package.json').version; if (v !== process.env.RELEASE.replace(/^v/, '')) { console.error('desktop/package.json has ' + v + ', the release is ' + process.env.RELEASE); process.exit(1); }"
+      - run: npm ci
+      - name: Build the installer
+        run: npm run dist -- ${{ matrix.target }}
+      - name: Start the packaged app and check it
+        run: npm run smoke
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: desktop/dist/${{ matrix.file }}
+          if-no-files-found: error
+
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: mobile
+    outputs:
+      key: ${{ steps.app.outputs.key }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - name: Check that the release matches the app version
+        if: env.RELEASE != ''
+        run: node -e "const v = require('./package.json').version; if (v !== process.env.RELEASE.replace(/^v/, '')) { console.error('mobile/package.json has ' + v + ', the release is ' + process.env.RELEASE); process.exit(1); }"
+      - run: npm ci
+      - name: Build the test app
+        run: |
+          node scripts/copy-app.mjs --smoke
+          npx cap sync android
+          cd android && ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Let the emulator use the processor's virtualisation
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run the in-app check in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-boot-anim -camera-back none -camera-front none
+          working-directory: mobile
+          script: node scripts/smoke-device.mjs android android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Build the app
+        id: app
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          node scripts/copy-app.mjs
+          npx cap sync android
+          # The app's own key (signing/kurgu-masasi.p12) when its password is in the repository's
+          # secrets; otherwise a key made for this build only (updates then need a reinstall).
+          if [ -n "$KEYSTORE_PASSWORD" ]; then
+            export KURGU_KEYSTORE="$PWD/signing/kurgu-masasi.p12" KURGU_KEYSTORE_PASSWORD="$KEYSTORE_PASSWORD"
+            echo "key=stable" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::ANDROID_KEYSTORE_PASSWORD is not set; the APK is signed with a key made for this build only."
+            export KURGU_KEYSTORE="$RUNNER_TEMP/temporary.p12" KURGU_KEYSTORE_PASSWORD="$(openssl rand -hex 24)"
+            keytool -genkeypair -storetype PKCS12 -keystore "$KURGU_KEYSTORE" -alias kurgu-masasi -keyalg RSA -keysize 3072 \
+              -validity 10000 -storepass "$KURGU_KEYSTORE_PASSWORD" -keypass "$KURGU_KEYSTORE_PASSWORD" -dname "CN=Kurgu Masasi"
+            echo "key=temporary" >> "$GITHUB_OUTPUT"
+          fi
+          (cd android && ./gradlew assembleRelease --no-daemon --stacktrace)
+          cp android/app/build/outputs/apk/release/app-release.apk Kurgu-Masasi-Android.apk
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --print-certs Kurgu-Masasi-Android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Android
+          path: mobile/Kurgu-Masasi-Android.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS
+    runs-on: macos-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - name: Check that the release matches the app version
+        if: env.RELEASE != ''
+        run: node -e "const v = require('./package.json').version; if (v !== process.env.RELEASE.replace(/^v/, '')) { console.error('mobile/package.json has ' + v + ', the release is ' + process.env.RELEASE); process.exit(1); }"
+      - run: npm ci
+      - name: Build the test app for the simulator
+        run: |
+          node scripts/copy-app.mjs --smoke
+          npx cap sync ios
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build \
+            > build-sim.log 2>&1 || { tail -n 80 build-sim.log; exit 1; }
+      - name: Run the in-app check in the simulator
+        run: node scripts/smoke-device.mjs ios build/sim/Build/Products/Debug-iphonesimulator/App.app
+      - name: Build the app (unsigned)
+        run: |
+          node scripts/copy-app.mjs
+          npx cap sync ios
+          VERSION=$(node -p "require('./package.json').version")
+          BUILD=$(node -p "const [a, b, c] = require('./package.json').version.split('.').map(Number); a * 10000 + b * 100 + c")
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' -derivedDataPath build/device \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" build \
+            > build-device.log 2>&1 || { tail -n 80 build-device.log; exit 1; }
+          mkdir -p Payload
+          cp -R build/device/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qry Kurgu-Masasi-iOS.ipa Payload
+          ls -la Kurgu-Masasi-iOS.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iOS
+          path: mobile/Kurgu-Masasi-iOS.ipa
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: [desktop, android, ios]
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: .github/release-notes.md
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ANDROID_KEY: ${{ needs.android.outputs.key }}
+        run: |
+          TAG="v${RELEASE#v}"
+          cp .github/release-notes.md notes.md
+          if [ "$ANDROID_KEY" = "temporary" ]; then
+            printf '\n> **Android:** Bu APK yalnızca bu sürüm için oluşturulmuş bir anahtarla imzalandı. Sonraki sürüme geçerken uygulamayı silip yeniden kurmanız gerekebilir.\n' >> notes.md
+          fi
+          # Creates the tag on the built commit when it does not exist yet.
+          gh release create "$TAG" out/Kurgu-Masasi-Windows.exe out/Kurgu-Masasi-Mac.dmg \
+            out/Kurgu-Masasi-Android.apk out/Kurgu-Masasi-iOS.ipa \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Kurgu Masası ${TAG#v}" \
+            --notes-file notes.md

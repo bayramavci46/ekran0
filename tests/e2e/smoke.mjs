@@ -151,6 +151,14 @@ try {
     return { name: r.name, b64: btoa(bin) };
   });
   check(!result.error, `export finishes${result.error ? `: ${result.error}` : ''}`);
+  // Without a save dialog the video is written to the browser's private storage, not kept in memory.
+  const stored = await page.evaluate(async () => {
+    const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle('disa-aktarilan');
+    const names = [];
+    for await (const name of dir.keys()) names.push(name);
+    return names;
+  }).catch(() => []);
+  check(!result.error && stored.includes(result.name), `the export is written to private storage (${stored.join(', ') || 'nothing'})`);
   if (!result.error) {
     const file = join(outDir, result.name);
     writeFileSync(file, Buffer.from(result.b64, 'base64'));

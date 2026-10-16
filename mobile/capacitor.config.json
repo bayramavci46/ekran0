@@ -1,0 +1,17 @@
+{
+  "appId": "io.github.bayramavci46.kurgumasasi",
+  "appName": "Kurgu Masası",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "never"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}

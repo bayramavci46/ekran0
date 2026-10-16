@@ -1015,7 +1015,7 @@
           target = null;
         }
       }
-      if (!target) target = exporter.memoryTarget();
+      if (!target) target = (await exporter.privateTarget(name)) || exporter.memoryTarget();
     }
 
     const controller = new AbortController();
@@ -1101,7 +1101,11 @@
     else els.resultText.append(strong, ` hazır (${U.bytes(blob.size)}).`);
     els.result.hidden = false;
     els.result.scrollIntoView({ block: 'nearest', behavior: KM.reducedMotion() ? 'auto' : 'smooth' });
-    KM.toast(onDisk ? `Kaydedildi · ${name}, ${U.bytes(blob.size)}` : `Video hazır · ${name}, ${U.bytes(blob.size)}`);
+    // In the phone app the video is handed to the share sheet: Save Video, Files, Drive…
+    els.download.textContent = PE.native ? 'Kaydet ya da paylaş' : 'İndir';
+    KM.toast(onDisk ? `Kaydedildi · ${name}, ${U.bytes(blob.size)}` : `Video hazır · ${name}, ${U.bytes(blob.size)}`, {
+      action: PE.native ? { label: 'Kaydet', onClick: download } : null,
+    });
     const downloads = onDisk ? false : await getDownloads();
     els.download.hidden = onDisk || downloads === null;
     if (!onDisk && downloads === null) {
@@ -1109,9 +1113,28 @@
     }
   }
 
+  /** Hands a file to the phone's share sheet, showing the copying on the button. */
+  async function shareNative(blob, name, button) {
+    const label = button.textContent;
+    button.disabled = true;
+    try {
+      await PE.native.share(blob, name, (p) => { button.textContent = `Hazırlanıyor · ${U.percent(p)}`; });
+    } catch (err) {
+      console.error(err);
+      KM.toast(`Video paylaşılamadı: ${err && err.message ? err.message : err}`, { tone: 'warn' });
+    } finally {
+      button.textContent = label;
+      button.disabled = false;
+    }
+  }
+
   async function download() {
     const r = state.result;
     if (!r) return;
+    if (PE.native) {
+      await shareNative(r.blob, r.name, els.download);
+      return;
+    }
     const downloads = await getDownloads();
     if (downloads) {
       try {
@@ -1134,6 +1157,10 @@
     const m = state.media[slot];
     if (!m) return;
     const file = m.file;
+    if (PE.native) {
+      await shareNative(file, file.name, els.slots[slot].querySelector('[data-action="save"]'));
+      return;
+    }
     if (exporter.canPickFile()) {
       try {
         const handle = await exporter.pickFile(file.name, /\.webm$/i.test(file.name) ? 'webm' : 'mp4');
@@ -1836,6 +1863,8 @@
   fitFrame();
   setMethodText(null);
 
+  // Videos a closed tab left behind in private storage.
+  exporter.forgetExports(6 * 3600 * 1000);
   exporter.detectFormats().then((formats) => {
     state.formats = formats;
     buildFormatOptions();
