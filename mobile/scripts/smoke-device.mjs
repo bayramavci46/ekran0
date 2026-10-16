@@ -33,8 +33,9 @@ if (platform === 'android') {
   run('adb', ['wait-for-device']);
   run('adb', ['install', '-r', appPath], { stdio: 'inherit' });
   run('adb', ['logcat', '-c']);
-  // Only the page's console (Capacitor writes it with this tag), as plain messages.
-  log = spawn('adb', ['logcat', '-v', 'brief', 'Capacitor/Console:V', '*:S']);
+  // The page's console (Capacitor writes it with this tag), and the system's notes on starting
+  // and ending the app's activities.
+  log = spawn('adb', ['logcat', '-v', 'brief', 'Capacitor/Console:V', 'ActivityTaskManager:I', 'ActivityManager:W', '*:S']);
   run('adb', ['shell', 'am', 'start', '-W', '-n', `${APP_ID}/.MainActivity`], { stdio: 'inherit' });
 } else {
   // The newest iPhone the installed Xcode has.
