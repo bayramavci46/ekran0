@@ -129,9 +129,9 @@ başka bir uygulamaya. Uzun videolar dışa aktarılırken belleğe değil cihaz
   (ör. WebM: VP9 + Opus). Hızlı yöntem kullanılamıyorsa video gerçek zamanlı oynatılarak kaydedilir; bu
   sırada sekme açık ve görünür kalmalıdır.
 - Dışa aktarmadan önce editör seçtiği video kodlayıcısıyla birkaç kare kodlayıp dener. Kodlayıcı kare vermiyorsa
-  (iOS simülatöründe H.264 donanım kodlayıcısı böyledir) yazılım kodlayıcısını, o da olmazsa başka bir biçimi ya
-  da gerçek zamanlı kaydı kullanır. Dışa aktarma sırasında 30 saniye ilerleme olmazsa durur ve gerçek zamanlı
-  kaydı önerir.
+  yazılım kodlayıcısını, o da olmazsa sıradaki kodlayıcıyı (ör. H.264 yerine H.265) ya da gerçek zamanlı kaydı
+  kullanır; iOS simülatöründe H.264 böyledir. Dışa aktarma sırasında 30 saniye ilerleme olmazsa durur ve gerçek
+  zamanlı kaydı önerir.
 - **Otomatik senkron** sesi çözebilen her tarayıcıda çalışır: Chrome, Edge, Firefox ve Safari 26 ve sonrası
   WebCodecs ile; daha eski Safari sürümleri Web Audio ile.
 - **Ekran ve kamera kaydı**, ekran paylaşımı ve WebCodecs olan bilgisayar tarayıcılarında açılır: Chrome ve Edge'de
