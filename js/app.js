@@ -1695,7 +1695,15 @@
     state.autoSync = els.autoSyncOnLoad.checked;
     savePrefs();
   });
-  if (typeof ResizeObserver === 'function') new ResizeObserver(() => drawSyncScope()).observe(els.syncScope);
+  // Resize callbacks that change the observed element itself (the sync scope hides itself, the
+  // monitor sets its own height on phones) run in the next frame, or the browser reports a loop.
+  const onNextFrame = (fn) => {
+    let queued = 0;
+    return () => {
+      if (!queued) queued = requestAnimationFrame(() => { queued = 0; fn(); });
+    };
+  };
+  if (typeof ResizeObserver === 'function') new ResizeObserver(onNextFrame(drawSyncScope)).observe(els.syncScope);
 
   els.outRes.addEventListener('change', () => {
     state.output.preset = els.outRes.value;
@@ -1839,7 +1847,7 @@
     }
   });
 
-  if (typeof ResizeObserver === 'function') new ResizeObserver(() => fitFrame()).observe(els.monitor);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(onNextFrame(fitFrame)).observe(els.monitor);
   if (stacked.addEventListener) stacked.addEventListener('change', fitFrame);
   else stacked.addListener(fitFrame);
   window.addEventListener('resize', fitFrame);
