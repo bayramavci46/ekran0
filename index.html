@@ -1,329 +1,547 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Ekran + Kamera Kurgu Masası</title>
-  <meta name="claude:viewport-fit-sides" content="cover">
-  <meta name="description" content="Ekran kaydı ile kamera kaydını tek videoda birleştirin: kamera penceresini istediğiniz yere taşıyın, büyütüp küçültün, MP4 olarak kaydedin.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="css/app.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kurgu Masası</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Ekran kaydınızı ve kamera kaydınızı tarayıcıda tek videoda birleştirin: kamera penceresini sürükleyin, boyutlandırın, MP4 olarak indirin. Ücretsiz; hesap ve yükleme yok.">
+<meta name="theme-color" content="#eef1f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c1112" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c1112'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23f0a73a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site/site.css">
 </head>
 <body>
-<div class="app">
-  <header class="topbar">
-    <div class="brand">
-      <span class="tally" aria-hidden="true"></span>
-      <h1 class="brand-name">Ekran + Kamera <span>Kurgu Masası</span></h1>
-    </div>
-    <p class="project-status" id="projectStatus" role="status">Örnek görüntü açık</p>
-    <div class="topbar-actions">
-      <button class="icon-btn" id="undoBtn" type="button" aria-label="Geri al" title="Geri al (Ctrl+Z)" disabled>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-3"/></svg>
-      </button>
-      <button class="icon-btn" id="redoBtn" type="button" aria-label="Yinele" title="Yinele (Ctrl+Shift+Z)" disabled>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5M20 12H9a5 5 0 0 0 0 10h3"/></svg>
-      </button>
-      <button class="btn btn-quiet" id="shortcutsBtn" type="button" aria-expanded="false" aria-controls="shortcuts">Kısayollar</button>
-    </div>
-  </header>
+<a class="skip" href="#main">İçeriğe geç</a>
 
-  <section class="shortcuts" id="shortcuts" aria-label="Klavye kısayolları" hidden>
-    <dl>
-      <div><dt><kbd>Boşluk</kbd></dt><dd>Oynat / duraklat</dd></div>
-      <div><dt><kbd>←</kbd> <kbd>→</kbd> ya da <kbd>,</kbd> <kbd>.</kbd></dt><dd>Bir kare geri / ileri</dd></div>
-      <div><dt><kbd>Shift</kbd> + <kbd>←</kbd> <kbd>→</kbd></dt><dd>1 saniye geri / ileri</dd></div>
-      <div><dt><kbd>I</kbd> <kbd>O</kbd></dt><dd>Başlangıç / bitiş noktasını buraya koy</dd></div>
-      <div><dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>Başlangıç / bitiş noktasına git</dd></div>
-      <div><dt>Kamera seçiliyken <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd></dt><dd>Kamerayı taşı (Shift ile daha hızlı)</dd></div>
-      <div><dt>Kamera seçiliyken <kbd>+</kbd> <kbd>−</kbd></dt><dd>Kamerayı büyüt / küçült</dd></div>
-      <div><dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt><dd>Geri al (Shift ile yinele)</dd></div>
-    </dl>
+<header class="nav" id="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#top" aria-label="Kurgu Masası, sayfanın başı">
+      <span class="tally" aria-hidden="true"></span>
+      <span class="brand-name">Kurgu Masası</span>
+    </a>
+    <nav class="nav-links" id="navLinks" aria-label="Bölümler">
+      <a href="#nasil">Nasıl çalışır</a>
+      <a href="#ozellikler">Özellikler</a>
+      <a href="#gizlilik">Gizlilik</a>
+      <a href="#sss">SSS</a>
+      <span class="nav-indicator" aria-hidden="true"></span>
+    </nav>
+    <div class="nav-actions">
+      <span class="nav-tc" id="navTc" title="Sayfanın okuma süresinde neredesiniz">00:00:00:00</span>
+      <a class="icon-btn nav-gh" href="https://github.com/bayramavci46/ekran0" aria-label="Kaynak kodu GitHub'da" title="Kaynak kodu GitHub'da">
+        <svg class="i" aria-hidden="true"><use href="#i-github"/></svg>
+      </a>
+      <a class="btn btn-primary btn-sm" href="editor.html">Editörü aç</a>
+      <button class="icon-btn nav-toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navSheet" aria-label="Menüyü aç">
+        <svg class="i i-open" aria-hidden="true"><use href="#i-menu"/></svg>
+        <svg class="i i-close" aria-hidden="true"><use href="#i-close"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="nav-progress" aria-hidden="true">
+    <div class="wrap">
+      <div class="nav-track">
+        <span class="nav-fill" id="navFill"></span>
+        <span class="nav-head" id="navHead"></span>
+      </div>
+    </div>
+  </div>
+  <div class="nav-sheet" id="navSheet" hidden>
+    <nav class="wrap nav-sheet-inner" aria-label="Menü">
+      <a href="#nasil">Nasıl çalışır</a>
+      <a href="#ozellikler">Özellikler</a>
+      <a href="#gizlilik">Gizlilik</a>
+      <a href="#sss">SSS</a>
+      <a href="https://github.com/bayramavci46/ekran0">Kaynak kodu (GitHub)</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- Hero: the product is the hero; the camera window is already draggable. -->
+  <section class="hero" id="top" aria-labelledby="heroTitle">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="bracket" aria-hidden="true">[</span>Ekran + Kamera Kurgu Masası</p>
+        <h1 id="heroTitle">Ekran kaydınız ve kameranız, tek videoda.</h1>
+        <p class="lead">İki kaydı bırakın, kamera penceresini istediğiniz yere taşıyıp boyutlandırın, MP4 olarak indirin. Hepsi tarayıcınızda olur; videolarınız hiçbir sunucuya gitmez.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" href="editor.html">
+            Editörü aç
+            <svg class="i i-move" aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+          <a class="btn btn-ghost btn-lg" href="#nasil">Nasıl çalışır</a>
+        </div>
+        <div class="hero-meta">
+          <div class="pop-anchor">
+            <button class="status" id="compatBtn" type="button" aria-expanded="false" aria-controls="compatPop" data-tone="busy">
+              <span class="status-dot" aria-hidden="true"></span>
+              <span id="compatText">Tarayıcınız kontrol ediliyor</span>
+              <svg class="i i-sm status-chev" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </button>
+            <div class="popover" id="compatPop" role="dialog" aria-labelledby="compatTitle" hidden>
+              <p class="pop-title" id="compatTitle">Bu tarayıcıda neler çalışır</p>
+              <dl class="pop-rows" id="compatRows"></dl>
+              <p class="pop-note">Kontrol bu sayfada, cihazınızda yapıldı; hiçbir bilgi gönderilmedi.</p>
+            </div>
+          </div>
+          <span class="meta">Ücretsiz · Hesap gerekmez</span>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="shell">
+          <div class="shell-bar">
+            <span class="shell-file">ders-03.mp4</span>
+            <span class="shell-tc"><span id="heroTc">00:00:00:00</span><span class="shell-total"> / 00:04:20:00</span></span>
+            <span class="shell-res">1920 × 1080 · 30 fps</span>
+          </div>
+          <div class="stage-mount" data-stage="hero"></div>
+        </div>
+        <div class="hero-controls">
+          <div class="segmented" id="presetSeg" role="radiogroup" aria-label="Hazır düzen">
+            <span class="seg-thumb" aria-hidden="true"></span>
+            <button type="button" role="radio" aria-checked="true" data-value="ders">Ders</button>
+            <button type="button" role="radio" aria-checked="false" data-value="demo">Ürün demosu</button>
+            <button type="button" role="radio" aria-checked="false" data-value="sunum">Sunum</button>
+          </div>
+          <p class="hint" id="heroHint">
+            <svg class="i i-sm" aria-hidden="true"><use href="#i-hand"/></svg>
+            Kamerayı sürükleyin, köşesinden büyütün
+          </p>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <main class="workspace">
-    <section class="editor" aria-label="Önizleme ve zaman çizelgesi">
-      <div class="monitor" id="monitor">
-        <div class="frame" id="frame">
-          <canvas id="preview" aria-label="Video önizlemesi"></canvas>
-          <div class="guides" id="guides" aria-hidden="true"></div>
-          <div class="cam-box" id="camBox" tabindex="0" role="group" aria-roledescription="taşınabilir pencere"
-               aria-label="Kamera penceresi. Sürükleyerek taşıyın, köşelerden büyütüp küçültün. Ok tuşları ile taşıyabilir, artı ve eksi ile boyutlandırabilirsiniz.">
-            <span class="handle" data-h="nw"></span><span class="handle" data-h="n"></span>
-            <span class="handle" data-h="ne"></span><span class="handle" data-h="e"></span>
-            <span class="handle" data-h="se"></span><span class="handle" data-h="s"></span>
-            <span class="handle" data-h="sw"></span><span class="handle" data-h="w"></span>
-            <span class="cam-readout" id="camReadout"></span>
+  <!-- How it works: four real steps, a sticky preview follows the reader. -->
+  <section class="how" id="nasil" aria-labelledby="howTitle">
+    <div class="wrap">
+      <header class="section-head">
+        <p class="eyebrow">Nasıl çalışır</p>
+        <h2 id="howTitle">Dört adımda bitmiş video.</h2>
+      </header>
+      <div class="how-grid">
+        <ol class="how-steps">
+          <li class="how-step is-active" data-step="1">
+            <span class="step-no">01</span>
+            <h3>Kayıtları bırakın</h3>
+            <p>Ekran kaydını ve kamera kaydını sayfaya sürükleyin. Telefonla çekilmiş dikey videolar da doğru yönde açılır.</p>
+            <p class="step-meta">MP4 · MOV · WebM</p>
+          </li>
+          <li class="how-step" data-step="2">
+            <span class="step-no">02</span>
+            <h3>Kamerayı yerleştirin</h3>
+            <p>Pencereyi tutup taşıyın, köşesinden büyütün. Kenarlara ve güvenli alan çizgilerine kendiliğinden hizalanır.</p>
+            <p class="step-meta">Daire · Yuvarlak köşe · Dikdörtgen</p>
+          </li>
+          <li class="how-step" data-step="3">
+            <span class="step-no">03</span>
+            <h3>Senkronlayın ve kırpın</h3>
+            <p>Kayıtlar farklı anlarda başladıysa kamera klibini zaman çizelgesinde kaydırın. Başını ve sonunu <kbd>I</kbd> ve <kbd>O</kbd> tuşlarıyla kesin.</p>
+            <p class="step-meta">Kare kare kaydırma · Geri al</p>
+          </li>
+          <li class="how-step" data-step="4">
+            <span class="step-no">04</span>
+            <h3>Dışa aktarın</h3>
+            <p>Video, tarayıcının donanım hızlandırmasıyla gerçek süresinden hızlı işlenir. Chrome ve Edge'de dosya doğrudan diskinize yazılır.</p>
+            <p class="step-meta">MP4 (H.264 + AAC) · WebM</p>
+          </li>
+        </ol>
+        <div class="how-visual">
+          <div class="how-sticky">
+            <div class="shell shell-quiet">
+              <div class="stage-mount" data-stage="how"></div>
+            </div>
+            <p class="how-caption" id="howCaption">Ekran kaydı ve kamera kaydı yüklendi</p>
           </div>
-          <p class="frame-badge" id="frameBadge">Örnek görüntü<span> · kamerayı sürükleyip boyutlandırmayı deneyin</span></p>
-        </div>
-        <div class="drop-veil" id="dropVeil" hidden>
-          <p>Videoyu bırakın</p>
         </div>
       </div>
+    </div>
+  </section>
 
-      <div class="transport">
-        <div class="transport-buttons">
-          <button class="icon-btn" id="toStartBtn" type="button" aria-label="Başlangıç noktasına git" title="Başlangıç noktasına git (Home)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M18 6l-8 6 8 6z"/></svg>
-          </button>
-          <button class="icon-btn" id="prevFrameBtn" type="button" aria-label="Bir kare geri" title="Bir kare geri (,)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
-          </button>
-          <button class="play-btn" id="playBtn" type="button" aria-label="Oynat" title="Oynat / duraklat (Boşluk)">
-            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
-            <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
-          </button>
-          <button class="icon-btn" id="nextFrameBtn" type="button" aria-label="Bir kare ileri" title="Bir kare ileri (.)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
-          </button>
-          <button class="icon-btn" id="toEndBtn" type="button" aria-label="Bitiş noktasına git" title="Bitiş noktasına git (End)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14M6 6l8 6-8 6z"/></svg>
-          </button>
+  <!-- Features: weight follows importance. -->
+  <section class="features" id="ozellikler" aria-labelledby="featTitle">
+    <div class="wrap">
+      <header class="section-head section-head-split">
+        <div>
+          <p class="eyebrow">Özellikler</p>
+          <h2 id="featTitle">Masadaki araçlar.</h2>
         </div>
-        <p class="timecode" aria-label="Zaman kodu">
-          <span id="tcNow">00:00:00:00</span><span class="tc-total"> / <span id="tcTotal">00:00:00:00</span></span>
-        </p>
-        <div class="transport-marks">
-          <button class="btn btn-mark" id="markInBtn" type="button" title="Başlangıç noktasını oynatma konumuna koy (I)">
-            <span class="bracket" aria-hidden="true">[</span> Başlangıç <kbd>I</kbd>
-          </button>
-          <button class="btn btn-mark" id="markOutBtn" type="button" title="Bitiş noktasını oynatma konumuna koy (O)">
-            Bitiş <span class="bracket" aria-hidden="true">]</span> <kbd>O</kbd>
-          </button>
+        <p class="section-lead">İki kayıttan tek video çıkarmak için gereken her şey var, fazlası yok. Ayrıntılar ihtiyaç duyduğunuzda açılır.</p>
+      </header>
+
+      <div class="bento">
+        <article class="card card-shape" aria-labelledby="shapeTitle">
+          <div class="card-copy">
+            <h3 id="shapeTitle">Kamera penceresi, tam istediğiniz gibi.</h3>
+            <p>Şeklini, çerçevesini ve gölgesini seçin, görüntüyü aynalayın. Pencere hangi şekilde olursa olsun görüntü esnemez, kırpılır.</p>
+          </div>
+          <div class="shape-controls">
+            <div class="segmented" id="shapeSeg" role="radiogroup" aria-label="Pencere şekli">
+              <span class="seg-thumb" aria-hidden="true"></span>
+              <button type="button" role="radio" aria-checked="false" data-value="rect">Dikdörtgen</button>
+              <button type="button" role="radio" aria-checked="true" data-value="rounded">Yuvarlak köşe</button>
+              <button type="button" role="radio" aria-checked="false" data-value="circle">Daire</button>
+            </div>
+            <div class="swatches" id="borderSwatches" role="radiogroup" aria-label="Çerçeve rengi">
+              <button type="button" role="radio" class="swatch" data-color="#ffffff" aria-checked="true" aria-label="Beyaz çerçeve"></button>
+              <button type="button" role="radio" class="swatch" data-color="#111111" aria-checked="false" aria-label="Siyah çerçeve"></button>
+              <button type="button" role="radio" class="swatch" data-color="#f0a73a" aria-checked="false" aria-label="Kehribar çerçeve"></button>
+              <button type="button" role="radio" class="swatch" data-color="none" aria-checked="false" aria-label="Çerçevesiz"></button>
+            </div>
+            <label class="switch"><input type="checkbox" role="switch" id="shadowSwitch" checked><span>Gölge</span></label>
+            <label class="switch"><input type="checkbox" role="switch" id="mirrorSwitch"><span>Ayna</span></label>
+          </div>
+          <div class="shell shell-quiet card-stage">
+            <div class="stage-mount" data-stage="shape"></div>
+          </div>
+        </article>
+
+        <article class="card card-sync" aria-labelledby="syncTitle">
+          <div class="card-copy">
+            <h3 id="syncTitle">El çırpın, eşleyin.</h3>
+            <p>Kayıtlar farklı anlarda başladıysa kamera izini kaydırın. Başta bir el çırpması iki kayıtta da görünür bir iz bırakır.</p>
+          </div>
+          <div class="sync">
+            <div class="sync-lane">
+              <span class="sync-label">Ekran</span>
+              <svg class="wave" id="waveScreen" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true"></svg>
+            </div>
+            <div class="sync-lane sync-lane-cam">
+              <span class="sync-label">Kamera <span class="sync-tip">· izi sürükleyin</span></span>
+              <div class="sync-drag" id="syncDrag" tabindex="0" role="slider" aria-label="Kamera izinin kaydırması" aria-valuemin="-6" aria-valuemax="6">
+                <svg class="wave" id="waveCamera" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true"></svg>
+              </div>
+            </div>
+            <span class="sync-line" id="syncLine" aria-hidden="true"></span>
+          </div>
+          <div class="sync-foot">
+            <span class="status" id="syncStatus" data-tone="warn"><span class="status-dot" aria-hidden="true"></span><span id="syncText">Kayık · +2,40 sn</span></span>
+            <button class="btn btn-ghost btn-sm" id="syncReset" type="button">Baştan</button>
+          </div>
+        </article>
+
+        <article class="card card-export" aria-labelledby="exportTitle">
+          <div class="card-copy">
+            <h3 id="exportTitle">Gerçek süresinden hızlı dışa aktarma.</h3>
+            <p>Kodlama tarayıcınızın donanımıyla yapılır. Ne kadar süreceğini ve dosyanın ne kadar tutacağını başlamadan görürsünüz.</p>
+          </div>
+          <div class="export-demo">
+            <div class="segmented segmented-sm" id="qualitySeg" role="radiogroup" aria-label="Kalite">
+              <span class="seg-thumb" aria-hidden="true"></span>
+              <button type="button" role="radio" aria-checked="false" data-value="medium">Orta</button>
+              <button type="button" role="radio" aria-checked="true" data-value="high">Yüksek</button>
+              <button type="button" role="radio" aria-checked="false" data-value="very-high">Çok yüksek</button>
+            </div>
+            <dl class="estimate">
+              <div><dt>Video</dt><dd>04:20 · 1080p · 30 fps</dd></div>
+              <div><dt>Tahmini dosya</dt><dd id="estSize">~260 MB</dd></div>
+              <div><dt>Tahmini süre</dt><dd id="estTime">~1 dk 05 sn</dd></div>
+            </dl>
+            <div class="export-run" id="exportRun" data-state="idle">
+              <button class="btn btn-primary" id="exportBtn" type="button">
+                <span class="btn-label">Örnek dışa aktarmayı izle</span>
+              </button>
+              <div class="export-progress" aria-hidden="true">
+                <div class="bar"><span class="bar-fill" id="exportFill"></span></div>
+                <p class="export-line"><span id="exportPct">%0</span><span id="exportSpeed">4,0× hız</span></p>
+              </div>
+              <p class="export-done" id="exportDone">
+                <svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>
+                <span>ders-03.mp4 hazır · <span id="exportSize">260 MB</span></span>
+                <button class="btn btn-ghost btn-sm" id="exportAgain" type="button">Tekrar</button>
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card card-browsers" aria-labelledby="browsersTitle">
+          <h3 id="browsersTitle">Her tarayıcıda, internetsiz de.</h3>
+          <ul class="checklist">
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Chrome, Edge, Safari, Firefox</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>iPhone ve iPad</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Tek dosya olarak indirip internetsiz açılır</li>
+          </ul>
+          <p class="card-meta" id="yourBrowser">Tarayıcınız kontrol ediliyor</p>
+        </article>
+
+        <article class="card card-keys" aria-labelledby="keysTitle">
+          <h3 id="keysTitle">Klavyeyle kurgu.</h3>
+          <div class="keys" aria-hidden="true">
+            <span class="keycap" data-key="i">I</span>
+            <span class="keycap" data-key="o">O</span>
+            <span class="keycap keycap-wide" data-key=" ">Boşluk</span>
+          </div>
+          <p class="card-meta">Başlangıç, bitiş, oynat</p>
+          <button class="btn btn-ghost btn-sm" type="button" data-drawer-open="shortcuts">Tüm kısayollar</button>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Privacy: the strongest reason to trust it, shown as a diagram. -->
+  <section class="privacy" id="gizlilik" aria-labelledby="privacyTitle">
+    <div class="wrap privacy-grid">
+      <div class="privacy-copy">
+        <p class="eyebrow">Gizlilik</p>
+        <h2 id="privacyTitle">Videolarınız bilgisayarınızdan çıkmaz.</h2>
+        <p>Kurgu Masası bir web sayfası gibi açılır ama bir masaüstü programı gibi çalışır. Kayıtlarınız tarayıcının içinde çözülür, birleştirilir ve yeniden kodlanır. Sunucu yok, hesap yok, yükleme kuyruğu yok.</p>
+        <dl class="facts">
+          <div><dt>Gönderilen veri</dt><dd>0 bayt</dd></div>
+          <div><dt>Hesap</dt><dd>Gerekmez</dd></div>
+          <div><dt>Kaynak kodu</dt><dd><a href="https://github.com/bayramavci46/ekran0">Açık, GitHub'da</a></dd></div>
+        </dl>
+      </div>
+      <figure class="flow" aria-labelledby="flowCaption">
+        <div class="flow-device">
+          <span class="flow-device-label">Bilgisayarınız</span>
+          <div class="flow-row">
+            <div class="flow-inputs">
+              <span class="flow-node"><svg class="i i-sm" aria-hidden="true"><use href="#i-monitor"/></svg>ekran.mp4</span>
+              <span class="flow-node"><svg class="i i-sm" aria-hidden="true"><use href="#i-camera"/></svg>kamera.mov</span>
+            </div>
+            <span class="flow-link" aria-hidden="true"></span>
+            <span class="flow-node flow-node-main">Tarayıcı<small>WebCodecs ile kodlama</small></span>
+            <span class="flow-link" aria-hidden="true"></span>
+            <span class="flow-node flow-node-out"><svg class="i i-sm" aria-hidden="true"><use href="#i-file"/></svg>ders-03.mp4</span>
+          </div>
+        </div>
+        <div class="flow-cloud" aria-hidden="true">
+          <span class="flow-cut"></span>
+          <span class="flow-cloud-node"><svg class="i i-sm"><use href="#i-cloud"/></svg>Sunucu</span>
+        </div>
+        <figcaption id="flowCaption">Kayıtlar, işlenme ve sonuç dosyası aynı cihazda kalır. Sunucuya giden bir yol yok.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq" id="sss" aria-labelledby="faqTitle">
+    <div class="wrap faq-grid">
+      <header class="faq-head">
+        <p class="eyebrow">SSS</p>
+        <h2 id="faqTitle">Sık sorulanlar.</h2>
+        <p>Cevabını bulamadığınız bir şey varsa <a href="https://github.com/bayramavci46/ekran0/issues">GitHub'da sorun</a>.</p>
+      </header>
+      <div class="accordion" id="faqList">
+        <div class="acc-item">
+          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq1" id="faq1b">Ücretli mi, hesap açmam gerekir mi?<span class="acc-icon" aria-hidden="true"></span></button></h3>
+          <div class="acc-panel" id="faq1" role="region" aria-labelledby="faq1b" hidden><div><p>Hayır. Kurgu Masası ücretsiz ve açık kaynaklı. Hesap, kayıt ya da kurulum yok; sayfayı açıp kullanırsınız.</p></div></div>
+        </div>
+        <div class="acc-item">
+          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq2" id="faq2b">Videolarım bir yere yükleniyor mu?<span class="acc-icon" aria-hidden="true"></span></button></h3>
+          <div class="acc-panel" id="faq2" role="region" aria-labelledby="faq2b" hidden><div><p>Hayır. Dosyalar tarayıcınızda işlenir, ağ üzerinden hiçbir video gönderilmez. Editörü açtıktan sonra internet bağlantınızı kesip deneyebilirsiniz.</p></div></div>
+        </div>
+        <div class="acc-item">
+          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq3" id="faq3b">Hangi dosyaları açabilirim?<span class="acc-icon" aria-hidden="true"></span></button></h3>
+          <div class="acc-panel" id="faq3" role="region" aria-labelledby="faq3b" hidden><div><p>Tarayıcınızın oynatabildiği her videoyu: çoğunlukla MP4 (H.264), MOV ve WebM. Telefonla çekilen dikey videolar doğru yönde görünür.</p></div></div>
+        </div>
+        <div class="acc-item">
+          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq4" id="faq4b">Ekran ve kamera kaydını nasıl alırım?<span class="acc-icon" aria-hidden="true"></span></button></h3>
+          <div class="acc-panel" id="faq4" role="region" aria-labelledby="faq4b" hidden><div><p>Ekran için OBS, QuickTime, Windows'taki Xbox Game Bar ya da telefonunuzun ekran kaydı; kamera için web kamerası ya da telefon yeterli. İki kaydı aynı anda başlatın ve başta bir kez el çırpın.</p></div></div>
+        </div>
+        <div class="acc-item">
+          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq5" id="faq5b">iPhone'da çalışır mı?<span class="acc-icon" aria-hidden="true"></span></button></h3>
+          <div class="acc-panel" id="faq5" role="region" aria-labelledby="faq5b" hidden><div><p>Evet, Safari'de açılır. iPhone, önizlemede ses düzeyinin değiştirilmesine izin vermez; seçtiğiniz düzey dışa aktarılan videoya yine uygulanır.</p></div></div>
+        </div>
+        <div class="acc-item">
+          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq6" id="faq6b">Uzun kayıtlarda sorun olur mu?<span class="acc-icon" aria-hidden="true"></span></button></h3>
+          <div class="acc-panel" id="faq6" role="region" aria-labelledby="faq6b" hidden><div><p>Chrome ve Edge'de dosya doğrudan diske yazıldığı için uzun kayıtlar da sorunsuz çıkar. Diğer tarayıcılarda video bellekte tutulur; bir saati aşan kayıtları bölüm bölüm dışa aktarmak daha güvenlidir.</p></div></div>
         </div>
       </div>
+    </div>
+  </section>
 
-      <div class="timeline" id="timeline"></div>
-      <p class="range-info" id="rangeInfo">Zaman çizelgesi, ekran kaydını yükleyince açılır.</p>
-    </section>
+  <!-- End card: the closing scene, like the last frame of a video. -->
+  <section class="endcard" aria-labelledby="endTitle">
+    <div class="wrap endcard-inner">
+      <div class="endcard-grid">
+      <div class="endcard-copy">
+      <p class="endcard-tc"><span id="endTc">00:00:00:00</span><span class="bracket" aria-hidden="true">]</span> Çıkış</p>
+      <h2 id="endTitle">Kaydı bırakın, gerisini masaya bırakın.</h2>
+      <p class="endcard-lead">Kurulum yok, hesap yok. Editörü açın, ilk videonuzu birkaç dakikada çıkarın.</p>
+      <div class="endcard-actions">
+        <a class="btn btn-primary btn-lg" href="editor.html">
+          Editörü aç
+          <svg class="i i-move" aria-hidden="true"><use href="#i-arrow"/></svg>
+        </a>
+        <a class="btn btn-on-dark btn-lg" href="https://github.com/bayramavci46/ekran0">
+          <svg class="i" aria-hidden="true"><use href="#i-github"/></svg>
+          Kaynak kodu
+        </a>
+      </div>
+      </div>
+      <figure class="endfile" aria-label="Örnek sonuç: ders-03.mp4">
+        <div class="shell shell-quiet"><div class="stage-mount" data-stage="end"></div></div>
+        <figcaption class="endfile-meta">
+          <span class="endfile-name"><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>ders-03.mp4</span>
+          <span>04:20 · 1080p · 260 MB</span>
+        </figcaption>
+      </figure>
+      </div>
+      <div class="endcard-track" aria-hidden="true"><span></span></div>
+    </div>
+  </section>
+</main>
 
-    <aside class="inspector" aria-label="Ayarlar">
-      <section class="panel" aria-labelledby="h-sources">
-        <h2 class="panel-title" id="h-sources">Kayıtlar</h2>
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <a class="brand" href="#top" aria-label="Kurgu Masası, sayfanın başı">
+        <span class="tally" aria-hidden="true"></span>
+        <span class="brand-name">Kurgu Masası</span>
+      </a>
+      <p>Ekran ve kamera kaydını tarayıcıda birleştiren ücretsiz, açık kaynaklı kurgu masası.</p>
+    </div>
+    <nav class="footer-col" aria-label="Ürün">
+      <p class="footer-title">Ürün</p>
+      <a href="editor.html">Editörü aç</a>
+      <a href="#nasil">Nasıl çalışır</a>
+      <a href="#ozellikler">Özellikler</a>
+      <a href="#sss">SSS</a>
+    </nav>
+    <nav class="footer-col" aria-label="Kaynak">
+      <p class="footer-title">Kaynak</p>
+      <a href="https://github.com/bayramavci46/ekran0">GitHub deposu</a>
+      <a href="https://github.com/bayramavci46/ekran0/issues">Sorun bildir</a>
+      <a href="https://mediabunny.dev/">Mediabunny (MPL-2.0)</a>
+    </nav>
+  </div>
+  <div class="wrap">
+    <div class="footer-base">
+      <span>© 2026 Kurgu Masası</span>
+      <span>Videolarınız cihazınızda kalır.</span>
+    </div>
+  </div>
+</footer>
 
-        <div class="slot" id="slotScreen" data-slot="screen">
-          <div class="slot-head">
-            <span class="slot-kind">Ekran kaydı</span>
-            <span class="slot-role">tam ekran, arka planda</span>
-          </div>
-          <label class="drop" id="dropScreen">
-            <input class="visually-hidden" type="file" id="fileScreen" accept="video/*,.mkv,.mov,.m4v,.webm">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
-            <span><strong>Dosya seçin</strong> ya da buraya sürükleyin</span>
-          </label>
-          <div class="slot-file" hidden>
-            <p class="slot-name"></p>
-            <p class="slot-meta"></p>
-            <div class="slot-actions">
-              <button class="btn btn-small" type="button" data-action="replace">Değiştir</button>
-              <button class="btn btn-small btn-quiet" type="button" data-action="remove">Kaldır</button>
-            </div>
-          </div>
-        </div>
-
-        <button class="btn btn-quiet swap-btn" id="swapBtn" type="button" disabled>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3"/></svg>
-          Yerlerini değiştir
-        </button>
-
-        <div class="slot" id="slotCamera" data-slot="camera">
-          <div class="slot-head">
-            <span class="slot-kind">Kamera kaydı</span>
-            <span class="slot-role">taşınabilir pencere</span>
-          </div>
-          <label class="drop" id="dropCamera">
-            <input class="visually-hidden" type="file" id="fileCamera" accept="video/*,.mkv,.mov,.m4v,.webm">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>
-            <span><strong>Dosya seçin</strong> ya da buraya sürükleyin</span>
-          </label>
-          <div class="slot-file" hidden>
-            <p class="slot-name"></p>
-            <p class="slot-meta"></p>
-            <div class="slot-actions">
-              <button class="btn btn-small" type="button" data-action="replace">Değiştir</button>
-              <button class="btn btn-small btn-quiet" type="button" data-action="remove">Kaldır</button>
-            </div>
-          </div>
-        </div>
-        <p class="error" id="loadError" role="alert" hidden></p>
-      </section>
-
-      <section class="panel" aria-labelledby="h-camera">
-        <h2 class="panel-title" id="h-camera">Kamera penceresi</h2>
-        <div class="field">
-          <span class="field-label" id="lblShape">Şekil</span>
-          <div class="segmented" role="radiogroup" aria-labelledby="lblShape" id="shapeGroup">
-            <button type="button" role="radio" data-shape="rect" aria-checked="false">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12"/></svg>Dikdörtgen
-            </button>
-            <button type="button" role="radio" data-shape="rounded" aria-checked="true">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="4"/></svg>Yuvarlak köşe
-            </button>
-            <button type="button" role="radio" data-shape="circle" aria-checked="false">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Daire
-            </button>
-          </div>
-        </div>
-        <div class="field" id="radiusField">
-          <label class="field-label" for="radius">Köşe yuvarlaklığı <output id="radiusOut" for="radius"></output></label>
-          <input type="range" id="radius" min="0" max="100" step="1">
-        </div>
-        <div class="field">
-          <label class="field-label" for="size">Boyut (kare genişliğine göre) <output id="sizeOut" for="size"></output></label>
-          <input type="range" id="size" min="6" max="100" step="1">
-        </div>
-        <div class="field">
-          <span class="field-label" id="lblPos">Konum</span>
-          <div class="pos-grid" role="group" aria-labelledby="lblPos">
-            <button type="button" data-pos="tl" aria-label="Sol üst"></button>
-            <button type="button" data-pos="tc" aria-label="Üst orta"></button>
-            <button type="button" data-pos="tr" aria-label="Sağ üst"></button>
-            <button type="button" data-pos="ml" aria-label="Sol orta"></button>
-            <button type="button" data-pos="mc" aria-label="Tam orta"></button>
-            <button type="button" data-pos="mr" aria-label="Sağ orta"></button>
-            <button type="button" data-pos="bl" aria-label="Sol alt"></button>
-            <button type="button" data-pos="bc" aria-label="Alt orta"></button>
-            <button type="button" data-pos="br" aria-label="Sağ alt"></button>
-          </div>
-        </div>
-        <div class="field">
-          <label class="field-label" for="border">Çerçeve <output id="borderOut" for="border"></output></label>
-          <input type="range" id="border" min="0" max="24" step="1">
-          <div class="swatches" role="radiogroup" aria-label="Çerçeve rengi" id="swatches">
-            <button type="button" role="radio" class="swatch" data-color="#ffffff" aria-label="Beyaz" aria-checked="false"></button>
-            <button type="button" role="radio" class="swatch" data-color="#111111" aria-label="Siyah" aria-checked="false"></button>
-            <button type="button" role="radio" class="swatch" data-color="#f0a73a" aria-label="Kehribar" aria-checked="false"></button>
-            <button type="button" role="radio" class="swatch" data-color="#5fc4bb" aria-label="Turkuaz" aria-checked="false"></button>
-            <label class="swatch swatch-custom" title="Başka bir renk seçin">
-              <input type="color" id="borderColor" aria-label="Özel çerçeve rengi">
-            </label>
-          </div>
-        </div>
-        <div class="toggles">
-          <label class="toggle"><input type="checkbox" id="shadow"><span>Gölge</span></label>
-          <label class="toggle"><input type="checkbox" id="mirror"><span>Ayna görüntüsü</span></label>
-          <label class="toggle"><input type="checkbox" id="camVisible"><span>Kamerayı göster</span></label>
-        </div>
-        <p class="hint">Köşeden sürüklerseniz oran korunur (serbest boyut için Shift’e basılı tutun). Kenardan sürüklerseniz pencerenin şekli değişir; görüntü bozulmadan kırpılır. Fare tekerleğiyle de büyütüp küçültebilirsiniz.</p>
-      </section>
-
-      <section class="panel" aria-labelledby="h-audio">
-        <h2 class="panel-title" id="h-audio">Ses</h2>
-        <div class="field">
-          <label class="field-label" for="volScreen">Ekran kaydı sesi <output id="volScreenOut" for="volScreen"></output></label>
-          <div class="volume-row">
-            <button class="icon-btn mute-btn" id="muteScreen" type="button" aria-pressed="false" aria-label="Ekran kaydının sesini kapat">
-              <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 9a4 4 0 0 1 0 6"/></svg>
-              <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 10l4 4m0-4-4 4"/></svg>
-            </button>
-            <input type="range" id="volScreen" min="0" max="100" step="1">
-          </div>
-        </div>
-        <div class="field">
-          <label class="field-label" for="volCamera">Kamera kaydı sesi <output id="volCameraOut" for="volCamera"></output></label>
-          <div class="volume-row">
-            <button class="icon-btn mute-btn" id="muteCamera" type="button" aria-pressed="false" aria-label="Kamera kaydının sesini kapat">
-              <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 9a4 4 0 0 1 0 6"/></svg>
-              <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 10l4 4m0-4-4 4"/></svg>
-            </button>
-            <input type="range" id="volCamera" min="0" max="100" step="1">
-          </div>
-        </div>
-        <p class="hint">İki kayıtta da aynı mikrofonun sesi varsa birini kısın, yoksa konuşma yankılı duyulur.</p>
-        <p class="hint" id="volumeNote" hidden>Bu cihaz önizlemede ses düzeyini değiştirmeye izin vermiyor; burada yalnızca sesi kapatıp açabilirsiniz. Seçtiğiniz düzey dışa aktarılan videoya yine de uygulanır.</p>
-      </section>
-
-      <section class="panel" aria-labelledby="h-sync">
-        <h2 class="panel-title" id="h-sync">Senkron</h2>
-        <div class="field">
-          <label class="field-label" for="offset">Kamera kaydırması (saniye)</label>
-          <div class="offset-row">
-            <button class="btn btn-small" type="button" data-nudge="-1" aria-label="1 saniye erkene al">−1</button>
-            <button class="btn btn-small" type="button" data-nudge="-0.1" aria-label="0,1 saniye erkene al">−0,1</button>
-            <input type="number" id="offset" step="0.01" inputmode="decimal">
-            <button class="btn btn-small" type="button" data-nudge="0.1" aria-label="0,1 saniye geciktir">+0,1</button>
-            <button class="btn btn-small" type="button" data-nudge="1" aria-label="1 saniye geciktir">+1</button>
-          </div>
-        </div>
-        <button class="btn btn-small btn-quiet" id="alignBtn" type="button">Kamerayı oynatma konumunda başlat</button>
-        <p class="hint">Kamera kaydı ekran kaydından sonra başladıysa değer pozitif olur. Zaman çizelgesinde kamera klibini sürükleyerek de ayarlayabilirsiniz. Kayda başlarken bir kez el çırparsanız iki kayıtta o anı hizalamak en kolay yoldur.</p>
-      </section>
-
-      <section class="panel panel-export" aria-labelledby="h-export">
-        <h2 class="panel-title" id="h-export">Dışa aktar</h2>
-        <div class="field-grid">
-          <div class="field">
-            <label class="field-label" for="outRes">Çözünürlük</label>
-            <select id="outRes"></select>
-          </div>
-          <div class="field">
-            <label class="field-label" for="outFps">Kare hızı</label>
-            <select id="outFps">
-              <option value="24">24 fps</option>
-              <option value="25">25 fps</option>
-              <option value="30">30 fps</option>
-              <option value="50">50 fps</option>
-              <option value="60">60 fps</option>
-            </select>
-          </div>
-          <div class="field">
-            <label class="field-label" for="outQuality">Kalite</label>
-            <select id="outQuality">
-              <option value="very-high">Çok yüksek</option>
-              <option value="high">Yüksek</option>
-              <option value="medium">Orta</option>
-              <option value="low">Düşük (küçük dosya)</option>
-            </select>
-          </div>
-          <div class="field field-wide">
-            <label class="field-label" for="outFormat">Biçim</label>
-            <select id="outFormat"></select>
-          </div>
-        </div>
-        <p class="method" id="exportMethod"></p>
-        <button class="btn btn-primary btn-wide" id="exportBtn" type="button" disabled>Videoyu dışa aktar</button>
-
-        <div class="export-progress" id="exportProgress" hidden>
-          <div class="progress" role="progressbar" aria-labelledby="h-export" aria-valuemin="0" aria-valuemax="100" id="progressBarWrap">
-            <div class="progress-bar" id="progressBar"></div>
-          </div>
-          <p class="progress-text" id="progressText" aria-live="polite"></p>
-          <button class="btn btn-small btn-quiet" id="cancelBtn" type="button">İptal et</button>
-        </div>
-
-        <div class="export-result" id="exportResult" hidden>
-          <video id="resultVideo" controls playsinline preload="metadata"></video>
-          <p class="result-text" id="resultText"></p>
-          <div class="result-actions">
-            <button class="btn btn-primary" id="downloadBtn" type="button">İndir</button>
-            <button class="btn btn-quiet" id="closeResultBtn" type="button">Kapat</button>
-          </div>
-        </div>
-        <p class="error" id="exportError" role="alert" hidden></p>
-        <button class="btn btn-small" id="retryRealtimeBtn" type="button" hidden>Gerçek zamanlı kayıtla dene</button>
-      </section>
-    </aside>
-  </main>
+<!-- Contextual panel: shortcuts open beside the page instead of a new page. -->
+<div class="drawer" id="shortcuts" hidden>
+  <div class="drawer-backdrop" data-drawer-close></div>
+  <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle" tabindex="-1">
+    <header class="drawer-head">
+      <h2 id="shortcutsTitle">Klavye kısayolları</h2>
+      <button class="icon-btn" type="button" data-drawer-close aria-label="Kapat"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </header>
+    <dl class="shortcut-list">
+      <div><dt><kbd>Boşluk</kbd></dt><dd>Oynat / duraklat</dd></div>
+      <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Bir kare geri / ileri</dd></div>
+      <div><dt><kbd>Shift</kbd> + <kbd>←</kbd> <kbd>→</kbd></dt><dd>Bir saniye geri / ileri</dd></div>
+      <div><dt><kbd>I</kbd> <kbd>O</kbd></dt><dd>Başlangıç / bitiş noktası</dd></div>
+      <div><dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>Başlangıca / bitişe git</dd></div>
+      <div><dt>Ok tuşları</dt><dd>Seçili kamerayı taşı</dd></div>
+      <div><dt><kbd>+</kbd> <kbd>−</kbd></dt><dd>Seçili kamerayı büyüt / küçült</dd></div>
+      <div><dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt><dd>Geri al (Shift ile yinele)</dd></div>
+    </dl>
+    <p class="drawer-note">Editörde sağ üstteki Kısayollar düğmesi de bu listeyi açar.</p>
+  </aside>
 </div>
 
-<div class="media-sink" id="mediaSink" aria-hidden="true">
-  <video id="screenVideo" playsinline webkit-playsinline preload="auto"></video>
-  <video id="cameraVideo" playsinline webkit-playsinline preload="auto"></video>
-</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="vendor/mediabunny.min.js"></script>
+<!-- One stage component, cloned for the hero, the steps and the shape card. -->
+<template id="stageTemplate">
+  <div class="stage">
+    <div class="frame">
+      <div class="scr" aria-hidden="true">
+        <div class="scr-win">
+          <div class="scr-top"><i></i><i></i><i></i><span>ders-03 / sunum.js</span></div>
+          <div class="scr-body">
+            <div class="scr-side"><b></b><b></b><b></b><b class="on"></b><b></b><b></b><b></b><b></b></div>
+            <ol class="scr-code">
+              <li><s class="a" style="--w:9%"></s><s class="l" style="--w:22%"></s></li>
+              <li class="in1"><s class="t" style="--w:14%"></s><s class="l" style="--w:6%"></s><s class="g" style="--w:18%"></s></li>
+              <li class="in1"><s class="t" style="--w:12%"></s><s class="m" style="--w:26%"></s></li>
+              <li class="in2"><s class="a" style="--w:8%"></s><s class="l" style="--w:15%"></s><s class="g" style="--w:9%"></s></li>
+              <li class="in2"><s class="l" style="--w:22%"></s><s class="t" style="--w:7%"></s></li>
+              <li class="in1"><s class="l" style="--w:4%"></s></li>
+              <li></li>
+              <li><s class="m" style="--w:13%"></s><s class="m" style="--w:30%"></s></li>
+              <li><s class="a" style="--w:9%"></s><s class="l" style="--w:17%"></s><s class="g" style="--w:6%"></s></li>
+              <li class="in1"><s class="t" style="--w:16%"></s><s class="l" style="--w:24%"></s></li>
+              <li class="in1"><s class="a" style="--w:11%"></s><s class="l" style="--w:9%"></s></li>
+              <li class="in2"><s class="g" style="--w:20%"></s><s class="l" style="--w:12%"></s></li>
+              <li class="in1"><s class="l" style="--w:4%"></s></li>
+            </ol>
+          </div>
+        </div>
+        <svg class="scr-pointer" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v15l4-4 3 7 2.5-1-3-7h6z"/></svg>
+      </div>
+      <div class="cam" tabindex="-1" role="group" aria-roledescription="taşınabilir pencere">
+        <div class="cam-media">
+          <svg class="avatar" viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <rect width="160" height="120" fill="#2c221c"/>
+            <rect width="160" height="120" fill="url(#avRoom)"/>
+            <circle cx="132" cy="22" r="44" fill="url(#avLamp)"/>
+            <g fill="#1d3a2e"><ellipse cx="18" cy="72" rx="7" ry="20" transform="rotate(-24 18 72)"/><ellipse cx="28" cy="70" rx="6" ry="18" transform="rotate(14 28 70)"/><ellipse cx="22" cy="62" rx="5" ry="16"/></g>
+            <rect x="12" y="84" width="20" height="16" rx="3" fill="#3a2a21"/>
+            <path d="M34 122c2-22 18-34 46-34s44 12 46 34z" fill="#2f6f69"/>
+            <path d="M70 80h20v14c-3 4-17 4-20 0z" fill="#c18663"/>
+            <ellipse cx="80" cy="60" rx="21" ry="25" fill="#d9a27c"/>
+            <path d="M58 58c-2-20 10-31 25-31 14 0 23 9 21 25-3-7-9-12-18-13-7 6-17 10-28 19z" fill="#2a1d17"/>
+            <path d="M101 52c2 6 1 16-4 22" fill="none" stroke="#ffcf8a" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+            <g class="av-eyes" fill="#2a1d17"><ellipse cx="72" cy="61" rx="2.3" ry="2.6"/><ellipse cx="88" cy="61" rx="2.3" ry="2.6"/></g>
+            <path d="M74 72c3 3 9 3 12 0" fill="none" stroke="#8f4f3a" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="cam-handle" data-h="nw"></span><span class="cam-handle" data-h="ne"></span>
+        <span class="cam-handle" data-h="se"></span><span class="cam-handle" data-h="sw"></span>
+        <span class="cam-readout"></span>
+      </div>
+      <div class="guides" aria-hidden="true"></div>
+      <div class="drop-overlay" aria-hidden="true">
+        <span class="drop-slot"><span class="drop-file"><svg class="i i-sm"><use href="#i-monitor"/></svg>ekran.mp4 · 04:31</span>Ekran kaydı</span>
+        <span class="drop-slot"><span class="drop-file"><svg class="i i-sm"><use href="#i-camera"/></svg>kamera.mov · 04:33</span>Kamera kaydı</span>
+      </div>
+      <div class="export-overlay" aria-hidden="true">
+        <span class="xo-name">ders-03.mp4</span>
+        <span class="xo-bar"><span></span></span>
+        <span class="xo-state"><span class="xo-pct">%0</span><span class="xo-done">Hazır · 260 MB</span></span>
+      </div>
+    </div>
+    <div class="tl" aria-hidden="true">
+      <div class="tl-lane"><span class="tl-clip tl-clip-scr">ekran.mp4</span></div>
+      <div class="tl-lane"><span class="tl-clip tl-clip-cam">kamera.mov</span></div>
+      <span class="tl-in"></span><span class="tl-out"></span>
+      <span class="tl-head"></span>
+    </div>
+  </div>
+</template>
+
+<svg class="sprite" aria-hidden="true">
+  <defs>
+    <linearGradient id="avRoom" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4b3a2c"/><stop offset="1" stop-color="#191411"/></linearGradient>
+    <radialGradient id="avLamp"><stop offset="0" stop-color="#ffd59a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd59a" stop-opacity="0"/></radialGradient>
+  </defs>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-dash" viewBox="0 0 24 24"><path d="M7 12h10"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5c0 3.6-2.4 6.5-6 6.5-2.4 0-3.8-1-5.2-3L4.6 14.2a1.6 1.6 0 0 1 2.4-2L9 14"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M10 12.5v5l4-2.5z"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></symbol>
+</svg>
+
 <script src="js/util.js"></script>
 <script src="js/geometry.js"></script>
-<script src="js/audio-mix.js"></script>
-<script src="js/renderer.js"></script>
-<script src="js/demo.js"></script>
-<script src="js/player.js"></script>
-<script src="js/timeline.js"></script>
-<script src="js/stage.js"></script>
-<script src="js/export.js"></script>
-<script src="js/app.js"></script>
+<script src="site/js/core.js"></script>
+<script src="site/js/ui.js"></script>
+<script src="site/js/stage.js"></script>
+<script src="site/js/nav.js"></script>
+<script src="site/js/compat.js"></script>
+<script src="site/js/how.js"></script>
+<script src="site/js/features.js"></script>
+<script src="site/js/main.js"></script>
 </body>
 </html>

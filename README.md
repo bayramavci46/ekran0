@@ -24,7 +24,8 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 
 ## Nasıl açılır
 
-- **En kolayı:** `index.html` dosyasına çift tıklayın. Chrome ya da Edge önerilir.
+- **En kolayı:** `editor.html` dosyasına çift tıklayın. Chrome ya da Edge önerilir.
+  `index.html` ürünün tanıtım sitesidir; oradaki **Editörü aç** düğmesi de editöre götürür.
 - **Tek dosya:** `npm run build` komutu `dist/ekran-kamera-kurgu.html` dosyasını üretir. Bu dosya her yere
   kopyalanabilir ve internet bağlantısı olmadan çalışır.
 - **Yerel sunucu ya da GitHub Pages:** depo kökünü olduğu gibi yayınlamanız yeterli
@@ -74,8 +75,10 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 Derleme adımı ve bağımlılık yoktur; dosyalar doğrudan tarayıcıda çalışır.
 
 ```
-index.html            arayüz
-css/app.css           görünüm (açık ve koyu tema)
+index.html            tanıtım sitesi
+site/                 sitenin görünümü (site.css) ve küçük canlı demoları (site/js)
+editor.html           editörün arayüzü
+css/app.css           editörün görünümü (açık ve koyu tema)
 js/geometry.js        kamera penceresi hesapları: taşıma, boyutlandırma, yapışma, kırpma
 js/renderer.js        bir kareyi çizer; önizleme ve dışa aktarma aynı kodu kullanır
 js/player.js          iki videoyu birlikte oynatır ve senkron tutar
