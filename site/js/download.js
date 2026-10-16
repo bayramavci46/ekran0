@@ -32,6 +32,8 @@
     const hero = KM.$('#heroDownload');
     if (hero) {
       hero.href = LATEST + FILES[os];
+      hero.target = '_blank';
+      hero.rel = 'noopener';
       KM.$('#heroDownloadText').textContent = LABELS[os];
     }
   };
