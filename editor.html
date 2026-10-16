@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Kurgu Masası Editörü</title>
   <meta name="claude:viewport-fit-sides" content="cover">
-  <meta name="description" content="Ekran kaydı ile kamera kaydını tek videoda birleştirin: kamera penceresini istediğiniz yere taşıyın, büyütüp küçültün, iki kaydı sesten otomatik eşleyin ve MP4 olarak kaydedin.">
+  <meta name="description" content="Ekranı ve kamerayı aynı anda kaydedin ya da hazır iki kaydı tek videoda birleştirin: kamera penceresini istediğiniz yere taşıyın, büyütüp küçültün, kayıtları sesten otomatik eşleyin ve MP4 olarak kaydedin.">
   <meta name="theme-color" content="#eef1f0" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0c1112" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c1112'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23f0a73a'/%3E%3C/svg%3E">
@@ -34,6 +34,10 @@
         <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5M20 12H9a5 5 0 0 0 0 10h3"/></svg>
       </button>
       <button class="btn btn-ghost btn-sm shortcuts-btn" id="shortcutsBtn" type="button" aria-haspopup="dialog" aria-controls="shortcuts">Kısayollar</button>
+      <button class="btn btn-ghost btn-sm record-btn" id="recordBtn" type="button" aria-haspopup="dialog" aria-controls="recorder" aria-label="Ekranı ve kamerayı kaydet" title="Ekranı ve kamerayı kaydet (R)" hidden>
+        <span class="rec-dot" aria-hidden="true"></span>
+        <span class="btn-label" id="recordBtnLabel">Kayıt</span>
+      </button>
       <button class="btn btn-primary btn-sm export-jump" id="exportJumpBtn" type="button" aria-label="Dışa aktar">
         <span class="btn-label">Dışa aktar</span>
         <svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
@@ -114,6 +118,16 @@
           <h2 class="panel-title" id="h-sources">Kayıtlar</h2>
         </header>
 
+        <button class="record-cta" id="recordCta" type="button" aria-haspopup="dialog" aria-controls="recorder" hidden>
+          <span class="record-cta-icon" aria-hidden="true"><span class="rec-dot"></span></span>
+          <span class="record-cta-body">
+            <span class="record-cta-title">Ekranı ve kamerayı kaydet</span>
+            <span class="record-cta-sub" id="recordCtaSub">İkisi aynı anda kaydedilir, bitince buraya yüklenir</span>
+          </span>
+          <svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+        <p class="or-line" id="recordOr" hidden><span>ya da hazır kayıtları yükleyin</span></p>
+
         <div class="slot" id="slotScreen" data-slot="screen">
           <span class="slot-icon" aria-hidden="true">
             <svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
@@ -132,6 +146,7 @@
               <p class="slot-meta"></p>
               <div class="slot-actions">
                 <button class="btn btn-ghost btn-xs" type="button" data-action="replace">Değiştir</button>
+                <button class="btn btn-ghost btn-xs" type="button" data-action="save" hidden>İndir</button>
                 <button class="btn btn-quiet btn-xs" type="button" data-action="remove">Kaldır</button>
               </div>
             </div>
@@ -161,6 +176,7 @@
               <p class="slot-meta"></p>
               <div class="slot-actions">
                 <button class="btn btn-ghost btn-xs" type="button" data-action="replace">Değiştir</button>
+                <button class="btn btn-ghost btn-xs" type="button" data-action="save" hidden>İndir</button>
                 <button class="btn btn-quiet btn-xs" type="button" data-action="remove">Kaldır</button>
               </div>
             </div>
@@ -375,8 +391,67 @@
       <div><dt>Ok tuşları</dt><dd>Seçili kamerayı taşı (Shift ile hızlı)</dd></div>
       <div><dt><kbd>+</kbd> <kbd>−</kbd></dt><dd>Seçili kamerayı büyüt / küçült</dd></div>
       <div><dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt><dd>Geri al (Shift ile yinele)</dd></div>
+      <div id="recordShortcut" hidden><dt><kbd>R</kbd></dt><dd>Ekranı ve kamerayı kaydet</dd></div>
     </dl>
     <p class="drawer-note">Kamerayı seçmek için önizlemedeki pencereye tıklayın ya da Tab ile üzerine gelin.</p>
+  </aside>
+</div>
+
+<div class="drawer recorder" id="recorder" hidden>
+  <div class="drawer-backdrop" data-drawer-close></div>
+  <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="recorderTitle" tabindex="-1">
+    <header class="drawer-head">
+      <h2 id="recorderTitle">Ekran ve kamera kaydı</h2>
+      <button class="icon-btn" type="button" data-drawer-close aria-label="Kapat">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+
+    <div class="rec-preview" id="recPreview">
+      <video id="recVideo" muted playsinline autoplay></video>
+      <p class="rec-preview-note" id="recPreviewNote">Kamera açılıyor…</p>
+      <p class="rec-badge" id="recBadge" hidden><span class="rec-dot" aria-hidden="true"></span><span id="recBadgeText">Kayıtta</span></p>
+      <span class="rec-level" aria-hidden="true"><span class="rec-level-fill" id="recLevel"></span></span>
+    </div>
+
+    <div class="rec-stage" id="recSetup">
+      <div class="field">
+        <label class="field-label" for="recCamera">Kamera</label>
+        <select id="recCamera"></select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="recMic">Mikrofon <span class="field-sub">çubuk, konuştukça dolar</span></label>
+        <select id="recMic"></select>
+      </div>
+      <div class="switches">
+        <label class="switch"><input type="checkbox" role="switch" id="recSystem"><span>Bilgisayarın sesini de kaydet</span></label>
+        <label class="switch" id="recHideField" hidden><input type="checkbox" role="switch" id="recHide"><span>Kayıt sırasında bu pencereyi küçült</span></label>
+      </div>
+      <p class="hint" id="recMemoryNote" hidden>Bu tarayıcı kaydı diske yazamıyor, bellekte tutuyor; uzun kayıtlar için Chrome, Edge ya da masaüstü uygulamasını kullanın.</p>
+      <p class="hint" id="recHint">Kaydı başlatınca hangi ekranı ya da pencereyi kaydedeceğinizi seçersiniz. Ekran ve kamera ayrı dosyalara, aynı saate göre kaydedilir; bitince ikisi de editöre yüklenir ve kamera kendiliğinden hizalanır.</p>
+      <button class="btn btn-rec btn-lg btn-wide" id="recStart" type="button"><span class="rec-dot" aria-hidden="true"></span>Kaydı başlat</button>
+    </div>
+
+    <div class="rec-stage" id="recSources" hidden>
+      <p class="field-label" id="recSourcesTitle">Neyi kaydedelim?</p>
+      <div class="rec-source-grid" id="recSourceGrid" role="group" aria-labelledby="recSourcesTitle"></div>
+      <button class="btn btn-ghost btn-sm" id="recSourceCancel" type="button">Vazgeç</button>
+    </div>
+
+    <div class="rec-stage" id="recRunning" hidden>
+      <div class="rec-clock-row">
+        <p class="status" id="recStatus" role="status"><span class="status-dot" aria-hidden="true"></span><span id="recStatusText">Kaydediliyor</span></p>
+        <p class="rec-clock" id="recClock">00:00</p>
+      </div>
+      <p class="rec-meta" id="recMeta"></p>
+      <div class="rec-controls">
+        <button class="btn btn-ghost btn-lg" id="recPause" type="button">Duraklat</button>
+        <button class="btn btn-rec btn-lg" id="recStop" type="button"><span class="rec-square" aria-hidden="true"></span><span id="recStopLabel">Kaydı bitir</span></button>
+      </div>
+      <button class="btn btn-quiet btn-sm rec-discard" id="recDiscard" type="button">Kaydı sil</button>
+      <p class="hint" id="recRunningHint">Bu paneli kapatabilirsiniz, kayıt sürer. Üst çubuktaki kırmızı süreye basınca buraya dönersiniz.</p>
+    </div>
+    <p class="error" id="recError" role="alert" hidden></p>
   </aside>
 </div>
 
@@ -399,6 +474,8 @@
 <script src="js/timeline.js"></script>
 <script src="js/stage.js"></script>
 <script src="js/export.js"></script>
+<script src="js/recorder.js"></script>
+<script src="js/record-panel.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

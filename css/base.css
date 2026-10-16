@@ -24,6 +24,10 @@
   --ok: #1d8250;
   --warn: #a35f07;
   --danger: #c0412e;
+  --rec: #d63b2f;
+  --rec-hover: #e24a3e;
+  --rec-soft: rgba(214, 59, 47, 0.1);
+  --rec-text: #b3301f;
   --scrim: rgba(9, 14, 15, 0.38);
   --shadow-1: 0 1px 2px rgba(17, 26, 28, 0.06), 0 3px 10px rgba(17, 26, 28, 0.05);
   --shadow-2: 0 2px 6px rgba(17, 26, 28, 0.06), 0 20px 48px rgba(17, 26, 28, 0.14);
@@ -97,6 +101,10 @@
     --ok: #5cc48a;
     --warn: #e3a64a;
     --danger: #f07a68;
+    --rec: #ef5446;
+    --rec-hover: #ff6658;
+    --rec-soft: rgba(239, 84, 70, 0.14);
+    --rec-text: #ff8b7f;
     --scrim: rgba(0, 0, 0, 0.55);
     --shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.02), 0 3px 10px rgba(0, 0, 0, 0.3);
     --shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 24px 60px rgba(0, 0, 0, 0.55);
@@ -125,6 +133,10 @@
   --ok: #5cc48a;
   --warn: #e3a64a;
   --danger: #f07a68;
+  --rec: #ef5446;
+  --rec-hover: #ff6658;
+  --rec-soft: rgba(239, 84, 70, 0.14);
+  --rec-text: #ff8b7f;
   --scrim: rgba(0, 0, 0, 0.55);
   --shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.02), 0 3px 10px rgba(0, 0, 0, 0.3);
   --shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 24px 60px rgba(0, 0, 0, 0.55);
@@ -346,6 +358,55 @@ kbd {
 
 .icon-btn:active {
   transform: scale(0.94);
+}
+
+/* ---- Recording dot and button ----------------------------------------------------------------------
+   Red is kept for recording alone, so a glance tells whether the screen is being recorded. */
+
+.btn-rec {
+  background: var(--rec);
+  color: #ffffff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 1px 2px rgba(60, 10, 4, 0.2);
+}
+
+.btn-rec:hover {
+  background: var(--rec-hover);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 8px 22px -8px rgba(214, 59, 47, 0.65);
+}
+
+.btn-rec .rec-dot {
+  background: #ffffff;
+}
+
+.rec-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--rec);
+}
+
+.rec-square {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.is-recording:not(.is-paused) .rec-dot {
+  animation: rec-pulse 1.6s ease-in-out infinite;
+}
+
+/* Paused: the dot becomes two bars. */
+.is-paused .rec-dot {
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--rec) 0 35%, transparent 35% 65%, var(--rec) 65%);
 }
 
 /* ---- Brand ------------------------------------------------------------------------------------- */

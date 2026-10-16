@@ -123,24 +123,35 @@
   };
 
   /** Side panel dialog with focus trap; keeps the page visible behind it. */
-  KM.drawer = (el) => {
+  KM.drawer = (el, { onClose } = {}) => {
     const panel = KM.$('.drawer-panel', el);
     let returnTo = null;
-    const focusables = () => KM.$$('button, a[href], [tabindex="0"]', panel);
+    const focusables = () => KM.$$('button:not([disabled]), a[href], select:not([disabled]), input:not([disabled]), [tabindex="0"]', panel)
+      .filter((node) => node.offsetParent !== null);
+    // Escape closes the drawer wherever the focus is (a button that just hid itself drops it to the page).
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        e.preventDefault();
+        close();
+      }
+    };
     const close = () => {
       if (el.hidden || el.classList.contains('is-leaving')) return;
+      document.removeEventListener('keydown', onKey);
       el.classList.add('is-leaving');
       setTimeout(() => {
         el.hidden = true;
         el.classList.remove('is-leaving');
         document.documentElement.style.overflow = '';
-        if (returnTo) returnTo.focus();
+        if (returnTo && returnTo.isConnected && returnTo.offsetParent !== null) returnTo.focus();
+        if (onClose) onClose();
       }, 230);
     };
     const open = (from) => {
       returnTo = from || document.activeElement;
       el.hidden = false;
       document.documentElement.style.overflow = 'hidden';
+      document.addEventListener('keydown', onKey);
       panel.focus();
     };
     KM.$$('[data-drawer-close]', el).forEach((b) => b.addEventListener('click', close));

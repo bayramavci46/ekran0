@@ -1,6 +1,7 @@
 # Ekran + Kamera Kurgu Masası
 
 Ekran kaydını ve kamera kaydını tek bir videoda birleştiren, tarayıcıda çalışan bir video düzenleyici.
+Ekranı ve kamerayı editörün kendisiyle aynı anda kaydedebilir ya da hazır iki kaydı açabilirsiniz.
 Ekran kaydı arka planda tam ekran oynar. Kamera kaydı onun üstünde, istediğiniz yere taşıyıp
 istediğiniz boyuta getirebildiğiniz bir pencere olarak durur. İki kayıt farklı anlarda başladıysa editör
 seslerini dinleyip onları kendisi eşler. Sonuç MP4 ya da WebM olarak kaydedilir.
@@ -9,6 +10,11 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 
 ## Özellikler
 
+- **Ekran ve kamera kaydı:** üst çubuktaki **Kayıt** düğmesiyle ekranı (ya da bir pencereyi) ve kamerayı aynı anda
+  kaydedin. Kamera, mikrofon ve isterseniz bilgisayarın sesi seçilir; kayıt duraklatılabilir. Ekran ve kamera ayrı
+  dosyalara, aynı saate göre kaydedilir: bitirince ikisi de editöre yüklenir ve kamera, sesten eşlemeye gerek
+  kalmadan hizalanır. Kayıtlar kaydedilirken tarayıcının diske ayırdığı alana yazılır, bu yüzden uzun kayıtlar
+  belleği doldurmaz; ham dosyaları **İndir** düğmesiyle ayrıca saklayabilirsiniz.
 - **Kamera penceresini taşıma:** fareyle (ya da parmakla) sürükleyin. Kenarlara, güvenli alan
   çizgilerine ve ortaya yaklaşınca mıknatıs gibi yapışır (Alt tuşu yapışmayı kapatır). Dokuz hazır konum da var.
 - **Büyütme ve küçültme:** köşeden çekince oran korunur (Shift ile serbest), kenardan çekince pencerenin
@@ -44,6 +50,12 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 Editör, Windows ve Mac için uygulama olarak da var. Aynı editördür; internet olmadan açılır, kendi penceresinde
 çalışır ve kendi kodlayıcılarıyla geldiği için dışa aktarmayı her bilgisayarda hızlı yoldan yapar.
 
+Uygulamada ekran ve kamera kaydı da var. Windows'ta kaydedilecek ekranı ya da pencereyi uygulamanın kendi
+listesinden seçersiniz ve bilgisayarın sesi de kaydedilebilir; macOS 15 ve sonrasında sistemin kendi seçicisi
+açılır. Kayıt sürerken pencere isterseniz küçülür; kaydı menü çubuğundaki (Windows'ta görev çubuğunun sağındaki)
+kırmızı simgeden duraklatır ya da bitirirsiniz. Mac'te ilk kayıtta kamera, mikrofon ve **Ekran ve Sistem Sesi
+Kaydı** izinleri istenir; ekran kaydı izni verildikten sonra uygulamayı bir kez kapatıp açmak gerekir.
+
 - **Windows 10 ve 11 (64 bit):** [Kurgu-Masasi-Windows.exe](https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Windows.exe).
   Tek tıkla kurulur, yönetici izni istemez.
 - **macOS 12 ve sonrası (Apple Silicon ve Intel):** [Kurgu-Masasi-Mac.dmg](https://github.com/bayramavci46/ekran0/releases/latest/download/Kurgu-Masasi-Mac.dmg).
@@ -59,8 +71,10 @@ Bu uyarıları kaldırmak için Windows'ta bir kod imzalama sertifikası, Mac'te
 
 ## Kullanım
 
-1. Sağdaki **Kayıtlar** bölümünden ekran kaydını ve kamera kaydını seçin ya da dosyaları sayfaya sürükleyip bırakın.
-   Yanlış yere yüklediyseniz **Yerlerini değiştir** düğmesine basın.
+1. Üst çubuktaki **Kayıt** düğmesine basın (ya da `R`): kamerayı ve mikrofonu seçin, **Kaydı başlat**'a basıp
+   kaydedilecek ekranı ya da pencereyi seçin. Bitirince iki kayıt da editöre gelir. Hazır kayıtlarınız varsa
+   sağdaki **Kayıtlar** bölümünden seçin ya da dosyaları sayfaya sürükleyip bırakın. Yanlış yere yüklediyseniz
+   **Yerlerini değiştir** düğmesine basın.
 2. Önizlemedeki kamera penceresini sürükleyerek taşıyın, köşelerinden çekerek büyütüp küçültün.
 3. Kayıtlar aynı anda başlamadıysa editör iki kaydın sesinden kaydırmayı kendisi bulur ve uygular (**Senkron**
    kartındaki anahtarla kapatılabilir). İnce ayar için kamera klibini zaman çizelgesinde sürükleyin ya da
@@ -81,6 +95,7 @@ Bu uyarıları kaldırmak için Windows'ta bir kod imzalama sertifikası, Mac'te
 | Kamera seçiliyken ok tuşları | Kamerayı taşı (Shift ile daha hızlı) |
 | Kamera seçiliyken `+` / `−` | Kamerayı büyüt / küçült |
 | `Ctrl` + `Z` / `Ctrl` + `Shift` + `Z` | Geri al / yinele |
+| `R` | Ekranı ve kamerayı kaydet |
 | `?` | Kısayol listesini aç |
 
 ## Tarayıcı desteği
@@ -94,6 +109,10 @@ Bu uyarıları kaldırmak için Windows'ta bir kod imzalama sertifikası, Mac'te
   sırada sekme açık ve görünür kalmalıdır.
 - **Otomatik senkron** sesi çözebilen her tarayıcıda çalışır: Chrome, Edge, Firefox ve Safari 26 ve sonrası
   WebCodecs ile; daha eski Safari sürümleri Web Audio ile.
+- **Ekran ve kamera kaydı**, ekran paylaşımı ve WebCodecs olan bilgisayar tarayıcılarında açılır: Chrome ve Edge'de
+  denendi; Firefox'un ve Safari 26'nın güncel sürümlerinde de gereken özellikler var. Tarayıcı bunları desteklemiyorsa
+  **Kayıt** düğmesi görünmez. Telefonlarda tarayıcılar ekran kaydına izin vermez. Bilgisayarın sesi Chrome ve Edge'de
+  paylaşım penceresindeki ses kutusuyla eklenir; macOS'ta tarayıcılar çoğunlukla yalnızca bir sekmenin sesini verir.
 - Tarayıcının oynatamadığı dosyalar (ör. bazı MKV ya da H.265 kayıtları) açılmaz; bu durumda kaydı MP4 (H.264)
   ya da WebM olarak dışa aktarıp yeniden deneyin.
 
@@ -117,6 +136,8 @@ js/timeline.js        zaman çizelgesi: oynatma konumu, kesme işaretleri, kamer
 js/audio-mix.js       dışa aktarmada iki sesi yeniden örnekleyip karıştırır
 js/auto-sync.js       otomatik senkron: iki kaydın sesinden ne kadar kaydığını bulur
 js/export.js          dışa aktarma: hızlı yol (Mediabunny + WebCodecs) ve gerçek zamanlı yedek yol
+js/recorder.js        ekran ve kamera kaydı: iki dosya, ortak saat, diske yazarak (Mediabunny + WebCodecs)
+js/record-panel.js    kayıt paneli: kamera ve mikrofon seçimi, önizleme, süre, duraklatma, masaüstü seçicisi
 js/demo.js            hiç kayıt yüklenmemişken gösterilen örnek görüntü
 js/app.js             durum, kontroller, geri al/yinele, tercihler
 vendor/               Mediabunny 1.60.0 (MPL-2.0, lisans metni klasörde)
@@ -128,7 +149,8 @@ desktop/              masaüstü uygulaması (Electron): pencere, menüler, kuru
   örnekleme hızlı sentetik kayıtlar dahil.
 - `npm run test:e2e` — gerçek tarayıcıda uçtan uca deneme: aynı sesi duyan iki örnek video üretir, otomatik
   senkronun kaydırmayı bulduğunu denetler, kamerayı taşır ve boyutlandırır, dışa aktarır ve sonucu `ffprobe` ile
-  denetler. ffmpeg ve Playwright gerektirir.
+  denetler; sonra Chromium'un sahte ekranı, kamerası ve mikrofonuyla duraklatmalı bir kayıt yapıp iki dosyanın
+  editöre hizalı geldiğini denetler. ffmpeg ve Playwright gerektirir.
 - `npm run build` — tek dosyalık sürüm (`--cdn` ile Mediabunny'yi jsDelivr'den yükleyen küçük sürüm).
 
 ### Masaüstü uygulamasını derlemek
@@ -143,8 +165,10 @@ npm run smoke      # paketlenmiş uygulamayı açıp denetler
 
 `npm run dist` önce editörü `desktop/app` içine kopyalar: yazı tipleri uygulamaya gömülür ve sayfa yalnızca kendi
 dosyalarını yükleyebilir. `npm run smoke`, paketlenmiş uygulamayı gizli olarak açar; bilgisayarın kendi
-kodlayıcılarıyla iki deneme kaydı üretir, otomatik senkronu çalıştırır ve iki saniyelik bir dışa aktarma yapar.
+kodlayıcılarıyla iki deneme kaydı üretir, otomatik senkronu çalıştırır, iki saniyelik bir dışa aktarma yapar ve
+editörün kaydedicisiyle çizilmiş bir ekran ile kamera görüntüsünü kaydeder.
 
 Yeni sürüm yayımlamak için `desktop/package.json` içindeki sürümü artırın ve `v` ile başlayan bir etiket gönderin
-(ör. `git tag v1.0.1 && git push origin v1.0.1`). GitHub Actions Windows ve Mac kurulum dosyalarını derler, ikisini de
+(ör. `git tag v1.1.1 && git push origin v1.1.1`) ya da GitHub'da **Actions → Masaüstü uygulaması → Run workflow**
+ile sürüm numarasını yazarak çalıştırın. GitHub Actions Windows ve Mac kurulum dosyalarını derler, ikisini de
 açıp dener ve bir sürüm olarak yayımlar. Sitedeki indirme bağlantıları her zaman en son sürümü indirir.

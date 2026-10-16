@@ -3,7 +3,9 @@
  * End-to-end check in a real browser: loads two generated recordings that hear the same
  * sound, checks that the automatic sync finds how far apart they started, moves and
  * resizes the camera window, nudges the offset, undoes, swaps the recordings, sets the
- * in/out points, exports, and inspects the resulting file with ffprobe.
+ * in/out points, exports, and inspects the resulting file with ffprobe. Then it records
+ * Chromium's fake screen, camera and microphone with the editor's own recorder, with a
+ * pause, and checks that both files arrive in the editor aligned.
  *
  * Needs ffmpeg/ffprobe on PATH and Playwright with Chromium
  * (npm i -D playwright && npx playwright install chromium, or a global install via
@@ -69,7 +71,8 @@ const check = (ok, message) => {
   if (!ok) failures.push(message);
 };
 
-const browser = await chromium.launch();
+// Fake camera, microphone and screen, and their permission prompts answered with yes.
+const browser = await chromium.launch({ args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const errors = [];
@@ -157,6 +160,41 @@ try {
     check(Math.abs(Number(info.format.duration) - 5) < 0.15, `output lasts the selected 5 s (${info.format.duration} s)`);
     console.log(`     ${file}`);
   }
+
+  // ---- Recording the screen and the camera in the editor ----
+  await page.keyboard.press('r');
+  await page.waitForFunction(() => !document.getElementById('recStart').disabled, null, { timeout: 15000 });
+  check(await page.evaluate(() => !document.getElementById('recVideo').hidden), 'the recording panel shows the camera');
+  await page.click('#recStart');
+  await page.waitForFunction(() => document.getElementById('recStatusText').textContent === 'Kaydediliyor', null, { timeout: 15000 });
+  check(await page.textContent('#exportBtn') === 'Kayıt sürüyor…', 'export waits while recording');
+  await page.waitForTimeout(1500);
+  await page.click('#recPause');
+  check(await page.waitForFunction(() => document.title.startsWith('❚❚'), null, { timeout: 3000 }).then(() => true, () => false),
+    'the tab title shows the pause');
+  await page.waitForTimeout(1000);
+  await page.click('#recPause');
+  await page.waitForTimeout(1500);
+  await page.click('#recStop');
+  await page.waitForFunction(() => PipEditor.app.state.sync.status === 'recorded' && PipEditor.app.state.media.camera,
+    null, { timeout: 30000 });
+  await loaded('screen');
+  await loaded('camera');
+  const recorded = await page.evaluate(() => {
+    const { media, offset } = PipEditor.app.state;
+    const info = (m) => ({ name: m.name, duration: m.duration, video: !!(m.analysis && m.analysis.video), audio: !!(m.analysis && m.analysis.audio) });
+    return { screen: info(media.screen), camera: info(media.camera), offset, chip: document.getElementById('syncStatusText').textContent };
+  });
+  check(/^ekran-kaydi-.*\.(mp4|webm)$/.test(recorded.screen.name) && /^kamera-kaydi-.*\.(mp4|webm)$/.test(recorded.camera.name),
+    `both recordings are in the editor (${recorded.screen.name}, ${recorded.camera.name})`);
+  // About 3 s were recorded around a 1 s pause; with the pause both would last about 4 s.
+  check([recorded.screen, recorded.camera].every((m) => m.duration > 2.6 && m.duration < 3.6),
+    `the pause is left out of both (${recorded.screen.duration} s, ${recorded.camera.duration} s)`);
+  check(recorded.camera.audio && recorded.camera.video && recorded.screen.video, 'the microphone is in the camera recording');
+  check(Math.abs(recorded.offset) < 0.3 && recorded.chip === 'Birlikte kaydedildi',
+    `the camera is aligned by the shared clock (${recorded.offset} s, “${recorded.chip}”)`);
+  check(await page.locator('#slotCamera [data-action="save"]').isVisible(), 'a recording made here can be downloaded');
+
   check(errors.length === 0, `no errors in the console${errors.length ? `: ${errors.join(' | ')}` : ''}`);
 } finally {
   await browser.close();

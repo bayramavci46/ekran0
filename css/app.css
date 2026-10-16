@@ -1481,6 +1481,292 @@ input[type="number"]::-webkit-outer-spin-button {
   font-size: var(--fs-sm);
 }
 
+/* ---- Recording ----------------------------------------------------------------------------------
+   The top bar's "Kayıt" button, the entry in the Recordings card and the recording drawer. The
+   red dot and the red button come from css/base.css. */
+
+.record-btn.is-recording {
+  border-color: var(--rec);
+  background: var(--rec-soft);
+  color: var(--rec-text);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.record-btn.is-recording:hover {
+  border-color: var(--rec);
+  background: var(--rec-soft);
+}
+
+.record-cta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--t-2) var(--ease), background-color var(--t-2) var(--ease), transform var(--t-1) var(--ease);
+}
+
+.record-cta:hover {
+  border-color: var(--rec);
+  background: var(--surface);
+}
+
+.record-cta:active {
+  transform: scale(0.99);
+}
+
+.record-cta.is-recording {
+  border-color: var(--rec);
+  background: var(--rec-soft);
+}
+
+.record-cta > .i {
+  color: var(--faint);
+}
+
+.record-cta-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--monitor);
+}
+
+.record-cta-icon .rec-dot {
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 4px rgba(239, 84, 70, 0.22);
+}
+
+.record-cta-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.record-cta-title {
+  font-weight: 600;
+}
+
+.record-cta-sub {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.record-cta.is-recording .record-cta-sub {
+  color: var(--rec-text);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.or-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--faint);
+  font-size: 0.75rem;
+}
+
+.or-line::before,
+.or-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.recorder .drawer-panel {
+  width: min(440px, 100%);
+}
+
+.rec-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--r-2);
+  background: var(--monitor);
+  color: var(--monitor-fg);
+}
+
+/* Like a mirror, which is how people expect to see themselves; the recording itself is not mirrored. */
+.rec-preview video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.rec-preview-note {
+  position: relative;
+  max-width: 34ch;
+  padding: 16px;
+  color: var(--monitor-muted);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
+.rec-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px 5px 8px;
+  border-radius: 999px;
+  background: rgba(7, 11, 12, 0.72);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.rec-badge.is-paused .rec-dot,
+.rec-badge:not(.is-paused) .rec-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.rec-level {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgba(232, 238, 236, 0.12);
+}
+
+.rec-level-fill {
+  display: block;
+  height: 100%;
+  transform-origin: left;
+  transform: scaleX(var(--p, 0));
+  background: #5cc48a;
+}
+
+.rec-stage {
+  display: grid;
+  gap: 16px;
+}
+
+.rec-clock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rec-clock {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.rec-meta {
+  margin-top: -6px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.rec-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.rec-discard {
+  justify-self: start;
+}
+
+.rec-discard.is-armed {
+  color: var(--danger);
+}
+
+.rec-source-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-height: min(56vh, 520px);
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.rec-source-note {
+  grid-column: 1 / -1;
+}
+
+.rec-source {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  background: var(--surface-2);
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--t-2) var(--ease), background-color var(--t-2) var(--ease);
+}
+
+.rec-source:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.rec-source-shot {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--monitor);
+}
+
+.rec-source-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.rec-source-name {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rec-source-kind {
+  margin-top: -4px;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.error a {
+  color: inherit;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 /* ---- Responsive ------------------------------------------------------------------------------- */
 
 @media (max-width: 1180px) {
@@ -1593,12 +1879,14 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 @media (max-width: 400px) {
-  .export-jump {
+  .export-jump,
+  .record-btn:not(.is-recording) {
     width: 40px;
     padding: 0;
   }
 
-  .export-jump .btn-label {
+  .export-jump .btn-label,
+  .record-btn:not(.is-recording) .btn-label {
     display: none;
   }
 }

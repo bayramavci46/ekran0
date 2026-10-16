@@ -1,7 +1,7 @@
 {
   "name": "kurgu-masasi",
   "productName": "Kurgu Masası",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Ekran kaydı ile kamera kaydını tek videoda birleştiren masaüstü video düzenleyici",
   "author": "Bayram Avcı",
@@ -33,6 +33,7 @@
       "main.js",
       "preload.js",
       "smoke-renderer.js",
+      "assets/**/*",
       "app/**/*",
       "package.json"
     ],
@@ -50,6 +51,10 @@
       "identity": "-",
       "hardenedRuntime": false,
       "minimumSystemVersion": "12.0",
+      "extendInfo": {
+        "NSCameraUsageDescription": "Kurgu Masası, ekranla birlikte kamera görüntünüzü kaydetmek için kamerayı kullanır.",
+        "NSMicrophoneUsageDescription": "Kurgu Masası, kayıtta sesinizi almak için mikrofonu kullanır."
+      },
       "artifactName": "Kurgu-Masasi-Mac.${ext}"
     },
     "dmg": {

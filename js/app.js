@@ -69,11 +69,18 @@
     result: $('exportResult'), resultVideo: $('resultVideo'), resultText: $('resultText'),
     download: $('downloadBtn'), closeResult: $('closeResultBtn'),
     exportError: $('exportError'), retryRealtime: $('retryRealtimeBtn'), volumeNote: $('volumeNote'),
+    recordBtn: $('recordBtn'),
   };
   const videos = { screen: $('screenVideo'), camera: $('cameraVideo') };
   const ctx = els.canvas.getContext('2d', { alpha: false });
   const demo = PE.demo.create();
   const player = new PE.SyncPlayer(videos.screen, videos.camera);
+  const recordPanel = PE.recordPanel.create({
+    getMediabunny: exporter.getMediabunny,
+    blocked: () => (state.exporting ? 'Dışa aktarma sürerken kayıt başlatılamaz. Önce dışa aktarmanın bitmesini bekleyin.' : null),
+    onRecorded: (result) => useRecordings(result),
+    onChange: () => syncExportControls(),
+  });
 
   // ---- Derived values -------------------------------------------------------
 
@@ -426,43 +433,115 @@
     return `“${name}” açılamadı. Tarayıcınız bu biçimi oynatamıyor olabilir; MP4 (H.264) ya da WebM olarak kaydedip yeniden deneyin.`;
   }
 
-  async function loadFile(slot, file) {
+  const isVideoFile = (file) => file.type.startsWith('video/') || VIDEO_NAME.test(file.name);
+
+  /**
+   * Opens files into their slots, then updates everything once. If one cannot be opened, every
+   * slot keeps what it had.
+   * @param {{screen?: File|null, camera?: File|null}} files null empties a slot
+   * @param {{offset: number, sync: object}} [keep] timing known in advance (recorded together)
+   * @param {object} [extra] fields added to each opened media (e.g. {recorded: true})
+   * @returns {Promise<boolean>} whether the files are in the editor now
+   */
+  async function loadFiles(files, keep, extra) {
     showLoadError(null);
-    if (!file) return;
-    if (!(file.type.startsWith('video/') || VIDEO_NAME.test(file.name))) {
-      showLoadError(`“${file.name}” bir video dosyası değil.`);
-      return;
+    const slots = ['screen', 'camera'].filter((slot) => files[slot] !== undefined);
+    const bad = slots.map((slot) => files[slot]).find((file) => file && !isVideoFile(file));
+    if (bad) {
+      showLoadError(`“${bad.name}” bir video dosyası değil.`);
+      return false;
     }
-    if (state.exporting) return;
+    if (!slots.length || state.exporting) return false;
     player.pause();
-    const url = URL.createObjectURL(file);
-    const el = videos[slot];
-    const previous = state.media[slot];
-    try {
-      const info = await openVideo(el, url);
-      const media = { file, url, name: file.name, size: file.size, ...info, analysis: undefined };
-      const oldFrame = frameSize();
-      state.media[slot] = media;
+    const opened = {};
+    const tried = [];
+    let failed = null;
+    for (const slot of slots) {
+      const file = files[slot];
+      if (!file) continue;
+      tried.push(slot);
+      const url = URL.createObjectURL(file);
+      try {
+        const info = await openVideo(videos[slot], url);
+        opened[slot] = { file, url, name: file.name, size: file.size, ...info, analysis: undefined, ...extra };
+      } catch (err) {
+        URL.revokeObjectURL(url);
+        failed = { name: file.name, err };
+        break;
+      }
+    }
+    if (failed) {
+      showLoadError(loadErrorText(failed.name, failed.err));
+      // Put the previous recordings back into the elements that were tried.
+      for (const slot of tried) {
+        if (opened[slot]) URL.revokeObjectURL(opened[slot].url);
+        const el = videos[slot];
+        const previous = state.media[slot];
+        if (previous) await openVideo(el, previous.url).catch(() => {});
+        else {
+          el.removeAttribute('src');
+          el.load();
+        }
+      }
+      applyPlayerSettings();
+      return false;
+    }
+    const oldFrame = frameSize();
+    for (const slot of slots) {
+      const previous = state.media[slot];
+      state.media[slot] = opened[slot] || null;
+      if (!opened[slot]) {
+        videos[slot].removeAttribute('src');
+        videos[slot].load();
+      }
       if (previous) URL.revokeObjectURL(previous.url);
-      mediaChanged(oldFrame, slot);
-      exporter.analyzeFile(file).then((analysis) => {
+    }
+    mediaChanged(oldFrame, slots.length > 1 ? 'both' : slots[0], keep);
+    for (const slot of Object.keys(opened)) {
+      const media = opened[slot];
+      exporter.analyzeFile(media.file).then((analysis) => {
         if (state.media[slot] !== media) return;
         media.analysis = analysis;
         syncSlots();
         syncAudioControls();
         refreshPlan();
       });
-    } catch (err) {
-      URL.revokeObjectURL(url);
-      showLoadError(loadErrorText(file.name, err));
-      // Put the previous recording back into the element.
-      if (previous) await openVideo(el, previous.url).catch(() => {});
-      else {
-        el.removeAttribute('src');
-        el.load();
-      }
-      applyPlayerSettings();
     }
+    return true;
+  }
+
+  function loadFile(slot, file) {
+    if (!file) {
+      showLoadError(null);
+      return Promise.resolve(false);
+    }
+    return loadFiles({ [slot]: file });
+  }
+
+  /** A recording made in the panel: both files at once, the camera where the shared clock puts it. */
+  async function useRecordings({ screen, camera, offset, duration }) {
+    // A screen-only recording replaces the camera too: the old camera file belongs to another take.
+    const keep = camera ? { offset, sync: { status: 'recorded', offset } } : undefined;
+    const ok = await loadFiles({ screen, camera: camera || null }, keep, { recorded: true });
+    if (!ok) return false;
+    const s = state.media.screen;
+    const c = state.media.camera;
+    if (s && c) {
+      // The two files start and stop a few frames apart; export only where both are there, so the
+      // camera window does not pop in after the first frame.
+      const start = G.clamp(state.offset, 0, s.duration);
+      const end = G.clamp(state.offset + c.duration, start, s.duration);
+      if (end - start > 1 && (start > 0 || end < s.duration)) {
+        state.trim = { start, end };
+        applyPlayerSettings();
+        player.seek(start);
+        resetHistory();
+        syncTimeline();
+        refreshPlan();
+      }
+    }
+    KM.toast(`Kayıt editöre yüklendi · ${U.duration(duration)}`);
+    return true;
   }
 
   function removeMedia(slot) {
@@ -536,6 +615,7 @@
     syncAll();
     refreshPlan();
     if (!keep && screen && camera && state.autoSync) runAutoSync('load');
+    recordPanel.release([screen, camera].filter(Boolean).map((m) => m.name));
   }
 
   function applyPlayerSettings() {
@@ -641,6 +721,7 @@
         info.querySelector('.slot-name').textContent = m.name;
         info.querySelector('.slot-meta').textContent = mediaMeta(m);
       }
+      node.querySelector('[data-action="save"]').hidden = !(m && m.recorded);
     }
     els.swap.disabled = !state.media.screen && !state.media.camera;
   }
@@ -804,8 +885,9 @@
     for (const s of [els.outRes, els.outFps, els.outQuality, els.outFormat]) s.disabled = busy;
     // While the sync is still listening the offset may change, so the export waits for it.
     const listening = state.sync.status === 'running';
-    els.exportBtn.disabled = busy || listening || !state.media.screen || !state.plan || state.plan.method === 'none';
-    els.exportBtn.textContent = listening ? 'Senkron bekleniyor…' : 'Videoyu dışa aktar';
+    const recordingNow = recordPanel.busy;
+    els.exportBtn.disabled = busy || listening || recordingNow || !state.media.screen || !state.plan || state.plan.method === 'none';
+    els.exportBtn.textContent = recordingNow ? 'Kayıt sürüyor…' : listening ? 'Senkron bekleniyor…' : 'Videoyu dışa aktar';
   }
 
   // ---- Export ----------------------------------------------------------------
@@ -909,7 +991,7 @@
   let wakeLock = null;
 
   async function startExport(forceRealtime) {
-    if (state.exporting || !state.media.screen) return;
+    if (state.exporting || !state.media.screen || recordPanel.busy) return;
     const chosen = forceRealtime ? realtimeFallbackPlan() : state.plan;
     if (!chosen || chosen.method === 'none') return;
     const job = buildJob();
@@ -1047,6 +1129,43 @@
     a.remove();
   }
 
+  /** Saves a recording made in the editor as it is, without the camera window. */
+  async function saveMedia(slot) {
+    const m = state.media[slot];
+    if (!m) return;
+    const file = m.file;
+    if (exporter.canPickFile()) {
+      try {
+        const handle = await exporter.pickFile(file.name, /\.webm$/i.test(file.name) ? 'webm' : 'mp4');
+        const writable = await handle.createWritable();
+        await file.stream().pipeTo(writable);
+        KM.toast(`Kaydedildi · ${handle.name}, ${U.bytes(file.size)}`);
+      } catch (err) {
+        if (!err || err.name !== 'AbortError') showLoadError(`“${file.name}” kaydedilemedi: ${err && err.message ? err.message : err}`);
+      }
+      return;
+    }
+    const downloads = await getDownloads();
+    if (downloads) {
+      try {
+        await downloads.save({ filename: file.name, data: file });
+      } catch (err) {
+        if (err && err.code !== 'declined') showLoadError(`Dosya kaydedilemedi (${err.code || err.message}).`);
+      }
+      return;
+    }
+    if (downloads === null) {
+      showLoadError('Bu görünümde dosya indirilemiyor; editörü tarayıcıda açıp yeniden kaydedin.');
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = m.url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   function closeResult() {
     const r = state.result;
     if (!r) return;
@@ -1173,6 +1292,7 @@
 
   /** After the recordings swap places, a finished match still holds, seen from the other side. */
   function swappedSync(sync) {
+    if (sync.status === 'recorded') return { status: 'recorded', offset: -sync.offset };
     const r = sync.result;
     if (!r || !r.screen || (sync.status !== 'ok' && sync.status !== 'weak')) return { status: 'idle' };
     return {
@@ -1212,6 +1332,10 @@
       const kept = Math.abs(state.offset - s.result.offset) < 0.0005;
       tone = kept ? 'ok' : '';
       text = kept ? 'Eşleşti' : 'Elle ayarlandı';
+    } else if (s.status === 'recorded') {
+      const kept = Math.abs(state.offset - s.offset) < 0.0005;
+      tone = kept ? 'ok' : '';
+      text = kept ? 'Birlikte kaydedildi' : 'Elle ayarlandı';
     } else if (s.status === 'weak') {
       tone = 'warn';
       text = 'Emin değil';
@@ -1258,6 +1382,9 @@
       const how = document.createElement('span');
       how.textContent = { sure: 'güven yüksek', likely: 'güven orta' }[s.result.confidence] || 'güven düşük';
       meta.append(at, how);
+    } else if (both && s.status === 'recorded') {
+      meta.textContent = 'İki kayıt aynı anda alındı; kamera, kayıttaki saate göre hizalandı.';
+      meta.classList.add('is-note');
     } else if (both && s.status !== 'idle' && s.status !== 'running' && s.status !== 'stopped' && s.status !== 'ok') {
       meta.textContent = syncProblem(s.status);
       meta.classList.add('is-note');
@@ -1376,6 +1503,7 @@
     });
     els.slots[slot].querySelector('[data-action="replace"]').addEventListener('click', () => input.click());
     els.slots[slot].querySelector('[data-action="remove"]').addEventListener('click', () => removeMedia(slot));
+    els.slots[slot].querySelector('[data-action="save"]').addEventListener('click', () => saveMedia(slot));
     const drop = els.drops[slot];
     const slotEl = els.slots[slot];
     slotEl.addEventListener('dragover', (e) => {
@@ -1589,7 +1717,7 @@
   document.addEventListener('keydown', (e) => {
     const mod = e.ctrlKey || e.metaKey;
     const target = e.target;
-    if (shortcuts.isOpen) return;
+    if (shortcuts.isOpen || recordPanel.isOpen) return;
     if (mod && !e.altKey && (e.key === 'z' || e.key === 'Z' || e.key === 'y')) {
       if (typing(target) && target.type !== 'range' && target.type !== 'checkbox') return;
       e.preventDefault();
@@ -1602,6 +1730,10 @@
     switch (e.key) {
       case '?':
         shortcuts.open(els.shortcutsBtn);
+        break;
+      case 'r':
+      case 'R':
+        if (recordPanel.supported) recordPanel.open(els.recordBtn);
         break;
       case ' ':
         if (onButton) return;
@@ -1666,6 +1798,15 @@
       case 'shortcuts':
         shortcuts.open(els.shortcutsBtn);
         break;
+      case 'record':
+        if (recordPanel.supported) recordPanel.open(els.recordBtn);
+        break;
+      case 'record-stop':
+        recordPanel.stop();
+        break;
+      case 'record-pause':
+        recordPanel.togglePause();
+        break;
       default:
         break;
     }
@@ -1702,5 +1843,5 @@
   });
 
   // Exposed for debugging and automated tests.
-  PE.app = { state, player, loadFile, startExport, buildJob, commit, undo, redo, runAutoSync };
+  PE.app = { state, player, loadFile, loadFiles, useRecordings, recordPanel, startExport, buildJob, commit, undo, redo, runAutoSync };
 })(self);

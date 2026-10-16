@@ -2,7 +2,9 @@
  * Smoke test that runs inside the packaged app's page (desktop/main.js --smoke-test).
  * It makes two short recordings that hear the same "voice" 1.5 s apart, with this computer's
  * own encoders, lets the automatic sync find the gap, and exports two seconds of the result
- * the way the Export button does. Evaluates to {checks: [{name, ok, info}]}.
+ * the way the Export button does. Then it records two live streams (drawn screen and camera
+ * pictures with tones) with the editor's recorder, the way the Kayıt button does.
+ * Evaluates to {checks: [{name, ok, info}]}.
  */
 (async () => {
   const checks = [];
@@ -154,6 +156,75 @@
     } finally {
       input.dispose();
     }
+
+    // ---- Recording ----
+    const R = PE.recorder;
+    check('desktop bridge', !!window.kurguDesktop && typeof window.kurguDesktop.setRecording === 'function'
+      && typeof window.kurguDesktop.chooseSource === 'function', window.kurguDesktop ? window.kurguDesktop.platform : null);
+    const onDisk = await R.storesOnDisk();
+    check('recording available', R.supported() && R.allowedHere(), { onDisk });
+    const live = (width, height, color) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      let i = 0;
+      const paint = () => {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = '#f0a73a';
+        ctx.fillRect((i++ * 7) % (width - 40), height / 3, 40, 40);
+      };
+      paint();
+      const timer = setInterval(paint, 33);
+      return { track: canvas.captureStream(30).getVideoTracks()[0], stop: () => clearInterval(timer) };
+    };
+    const ac = new AudioContext();
+    const tone = (frequency) => {
+      const osc = ac.createOscillator();
+      osc.frequency.value = frequency;
+      const dest = ac.createMediaStreamDestination();
+      osc.connect(dest);
+      osc.start();
+      return dest.stream.getAudioTracks()[0];
+    };
+    const screenLive = live(1280, 720, '#203a40');
+    const cameraLive = live(640, 480, '#5a3d2c');
+    const recording = new R.Recording(MB, {
+      screen: new MediaStream([screenLive.track, tone(440)]),
+      devices: new MediaStream([cameraLive.track, tone(660)]),
+    });
+    let failure = null;
+    recording.addEventListener('error', () => { failure = recording.failure; });
+    await recording.start();
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    const taken = await recording.stop();
+    screenLive.stop();
+    cameraLive.stop();
+    ac.close();
+    const inspect = async (file) => {
+      const recorded = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
+      try {
+        const v = await recorded.getPrimaryVideoTrack();
+        const a = await recorded.getPrimaryAudioTrack();
+        return {
+          name: file.name, bytes: file.size, duration: await recorded.computeDuration(),
+          video: v && `${await v.getCodec()} ${await v.getDisplayWidth()}x${await v.getDisplayHeight()}`,
+          audio: a && (await a.getCodec()),
+        };
+      } finally {
+        recorded.dispose();
+      }
+    };
+    const screenTake = await inspect(taken.screen);
+    const cameraTake = await inspect(taken.camera);
+    check('recording the screen and the camera', !failure
+      && [screenTake, cameraTake].every((t) => t.video && t.audio && Math.abs(t.duration - 2.5) < 0.4)
+      && Math.abs(taken.offset) < 0.5, {
+      format: recording.format, offset: taken.offset, screen: screenTake, camera: cameraTake,
+      error: failure ? String(failure) : null,
+    });
+    await R.forget([taken.screen.name, taken.camera.name]);
   } catch (err) {
     check('no exceptions', false, String(err && err.stack ? err.stack : err));
   }
