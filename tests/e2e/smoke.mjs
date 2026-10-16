@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /*
- * End-to-end check in a real browser: loads two generated recordings, moves and
- * resizes the camera window, sets the sync offset and the in/out points, exports,
- * and inspects the resulting file with ffprobe.
+ * End-to-end check in a real browser: loads two generated recordings that hear the same
+ * sound, checks that the automatic sync finds how far apart they started, moves and
+ * resizes the camera window, nudges the offset, undoes, swaps the recordings, sets the
+ * in/out points, exports, and inspects the resulting file with ffprobe.
  *
  * Needs ffmpeg/ffprobe on PATH and Playwright with Chromium
  * (npm i -D playwright && npx playwright install chromium, or a global install via
@@ -31,13 +32,23 @@ const ffmpeg = (args) => execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'e
 const probe = (file) => JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries',
   'stream=codec_type,width,height:format=duration', '-of', 'json', file]).toString());
 
+// One "room" sound heard by both recordings: noise bursts that switch on and off irregularly,
+// like speech. The camera started CAMERA_LATE seconds after the screen recording and hears it
+// through a duller microphone, more quietly and with more noise.
+const CAMERA_LATE = 1.25;
+const room = 'aevalsrc=exprs=0.6*(random(0)-0.5)*gt(sin(2*PI*1.31*t)\\,0.25)*gt(sin(2*PI*0.53*t+1)\\,-0.3)'
+  + '*gt(sin(2*PI*2.71*t+2)\\,-0.5):s=48000:d=20';
 // VP9/Opus in WebM plays in every Chromium build, including ones without H.264.
 const screenFile = join(outDir, 'screen.webm');
 const cameraFile = join(outDir, 'camera.webm');
-ffmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=30:duration=6', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=6',
-  '-c:v', 'libvpx-vp9', '-deadline', 'realtime', '-cpu-used', '8', '-b:v', '1M', '-c:a', 'libopus', screenFile]);
-ffmpeg(['-f', 'lavfi', '-i', 'smptebars=size=640x480:rate=25:duration=5', '-f', 'lavfi', '-i', 'sine=frequency=880:duration=5',
-  '-c:v', 'libvpx-vp9', '-deadline', 'realtime', '-cpu-used', '8', '-b:v', '600k', '-c:a', 'libopus', cameraFile]);
+ffmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=30:duration=8', '-f', 'lavfi', '-i', room,
+  '-af', 'atrim=0:8', '-c:v', 'libvpx-vp9', '-deadline', 'realtime', '-cpu-used', '8', '-b:v', '1M', '-c:a', 'libopus',
+  '-t', '8', screenFile]);
+ffmpeg(['-f', 'lavfi', '-i', 'smptebars=size=640x480:rate=25:duration=6', '-f', 'lavfi', '-i', room,
+  '-f', 'lavfi', '-i', 'anoisesrc=color=pink:amplitude=0.01:duration=20:seed=3',
+  '-filter_complex', `[1:a]atrim=${CAMERA_LATE}:${CAMERA_LATE + 6},asetpts=PTS-STARTPTS,lowpass=f=3000,volume=0.5[v];[v][2:a]amix=inputs=2:duration=first:normalize=0[a]`,
+  '-map', '0:v', '-map', '[a]', '-c:v', 'libvpx-vp9', '-deadline', 'realtime', '-cpu-used', '8', '-b:v', '600k', '-c:a', 'libopus',
+  '-t', '6', cameraFile]);
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.webm': 'video/webm' };
 const server = createServer((req, res) => {
@@ -71,10 +82,21 @@ try {
     const m = PipEditor.app.state.media[s];
     return m && m.analysis !== undefined;
   }, slot, { timeout: 20000 });
+  const syncDone = () => page.waitForFunction(() => PipEditor.app.state.sync.status !== 'running', null, { timeout: 30000 });
+  const offset = () => page.evaluate(() => PipEditor.app.state.offset);
+  const syncChip = () => page.evaluate(() => document.getElementById('syncStatusText').textContent);
   await page.setInputFiles('#fileScreen', screenFile);
   await loaded('screen');
   await page.setInputFiles('#fileCamera', cameraFile);
   await loaded('camera');
+
+  await syncDone();
+  const sync = await page.evaluate(() => ({ status: PipEditor.app.state.sync.status, offset: PipEditor.app.state.offset }));
+  check(sync.status === 'ok' && Math.abs(sync.offset - CAMERA_LATE) < 0.03,
+    `automatic sync finds that the camera started ${CAMERA_LATE} s later (${sync.status}, ${sync.offset} s)`);
+  check(await syncChip() === 'Eşleşti', 'the sync card reports the match');
+  check(await page.locator('.toast', { hasText: 'Senkronlandı' }).count() === 1, 'a toast offers to undo the sync');
+  const matched = await offset();
 
   const box = await page.locator('#camBox').boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -95,13 +117,23 @@ try {
   check(Math.abs((resized.w * 1280) / (resized.h * 720) - 4 / 3) < 0.01, 'corner resize keeps the 4:3 camera shape');
 
   await page.click('[data-nudge="1"]');
+  check(Math.abs(await offset() - (matched + 1)) < 1e-6, 'offset buttons shift the camera by one second');
+  check(await syncChip() === 'Elle ayarlandı', 'the sync card notices the hand-set offset');
+  await page.click('#undoBtn');
+  check(await offset() === matched, 'undo puts the camera back where the sync put it');
+
+  await page.click('#swapBtn');
+  await page.waitForFunction((o) => PipEditor.app.state.offset === -o, matched, { timeout: 20000 });
+  check(true, 'swapping the recordings flips the offset');
+  await page.click('#swapBtn');
+  await page.waitForFunction((o) => PipEditor.app.state.offset === o, matched, { timeout: 20000 });
+
   await page.evaluate(() => PipEditor.app.player.seek(0.5));
   await page.keyboard.press('i');
   await page.evaluate(() => PipEditor.app.player.seek(5.5));
   await page.keyboard.press('o');
-  const edit = await page.evaluate(() => ({ offset: PipEditor.app.state.offset, trim: PipEditor.app.state.trim }));
-  check(edit.offset === 1, 'offset buttons shift the camera by one second');
-  check(Math.abs(edit.trim.start - 0.5) < 0.05 && Math.abs(edit.trim.end - 5.5) < 0.05, 'I and O set the in and out points');
+  const trim = await page.evaluate(() => PipEditor.app.state.trim);
+  check(Math.abs(trim.start - 0.5) < 0.05 && Math.abs(trim.end - 5.5) < 0.05, 'I and O set the in and out points');
 
   await page.waitForFunction(() => !document.getElementById('exportBtn').disabled, null, { timeout: 15000 });
   await page.click('#exportBtn');

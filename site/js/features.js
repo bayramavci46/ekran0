@@ -1,6 +1,7 @@
 /*
  * The feature cards are small working demos: style the camera window, line up two
- * recordings by their clap, watch an export with its cost shown up front, press keys.
+ * recordings by their sound (automatically or by hand), watch an export with its cost
+ * shown up front, press keys.
  */
 (function (root) {
   'use strict';
@@ -61,6 +62,9 @@
 
     let bars = START_OFFSET; // current lag of the camera, in bars
     let synced = false;
+    let byHand = true;
+    let listening = 0;
+    const auto = KM.$('#syncAuto');
     const barPx = () => drag.clientWidth / BARS;
     const render = (animate) => {
       drag.classList.toggle('is-dragging', !animate);
@@ -72,7 +76,9 @@
       text.textContent = nowSynced ? 'Senkron · eşleşti' : `Kayık · ${KM.signed(sec)}`;
       drag.setAttribute('aria-valuenow', sec.toFixed(2));
       drag.setAttribute('aria-valuetext', nowSynced ? 'Senkron' : `${KM.signed(sec)} kayık`);
-      if (nowSynced && !synced) KM.toast('Senkron yakalandı · kamera 2,40 sn öne alındı');
+      if (nowSynced && !synced) {
+        KM.toast(byHand ? 'Senkron yakalandı · kamera 2,40 sn öne alındı' : 'Sesten eşlendi · kamera 2,40 sn öne alındı');
+      }
       synced = nowSynced;
     };
     const placeLine = () => {
@@ -84,6 +90,8 @@
 
     let d = null;
     drag.addEventListener('pointerdown', (e) => {
+      stopListening();
+      byHand = true;
       d = { id: e.pointerId, x: e.clientX, start: bars };
       drag.setPointerCapture(e.pointerId);
       e.preventDefault();
@@ -106,13 +114,40 @@
       const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
       if (!dir) return;
       e.preventDefault();
+      stopListening();
+      byHand = true;
       bars = KM.clamp(Math.round(bars) + dir * (e.shiftKey ? 3 : 1), -12, 16);
       render(true);
     });
     KM.$('#syncReset').addEventListener('click', () => {
+      stopListening();
       bars = START_OFFSET;
       synced = false;
       render(true);
+    });
+
+    // "Otomatik eşle" listens for a moment, then slides the camera track onto the clap,
+    // the way the editor does it with the real recordings.
+    function stopListening() {
+      clearTimeout(listening);
+      listening = 0;
+      auto.disabled = false;
+    }
+    auto.addEventListener('click', () => {
+      if (Math.abs(bars) < 0.01) {
+        KM.toast('Kayıtlar zaten eşleşiyor');
+        return;
+      }
+      stopListening();
+      auto.disabled = true;
+      status.dataset.tone = 'busy';
+      text.textContent = 'Sesler dinleniyor…';
+      listening = setTimeout(() => {
+        stopListening();
+        byHand = false;
+        bars = 0;
+        render(true);
+      }, KM.reducedMotion() ? 0 : 900);
     });
     root.addEventListener('resize', KM.rafThrottle(() => {
       placeLine();

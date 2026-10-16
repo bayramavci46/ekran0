@@ -1,10 +1,56 @@
 /*
- * Reusable interface pieces: segmented control, popover, drawer, toast and accordion.
- * They share the same motion tokens (see site.css) and keyboard behaviour.
+ * Shared interface kit for the website and the editor: small helpers and the components that go
+ * with css/base.css (segmented control, popover, drawer, toast, accordion). Everything lives on
+ * window.KM. Formatting comes from js/util.js so both pages write numbers and times the same way.
  */
 (function (root) {
   'use strict';
-  const KM = root.KM;
+  const KM = (root.KM = root.KM || {});
+  const U = root.PipEditor.util;
+
+  // ---- Helpers ---------------------------------------------------------------
+
+  KM.$ = (sel, ctx) => (ctx || document).querySelector(sel);
+  KM.$$ = (sel, ctx) => Array.from((ctx || document).querySelectorAll(sel));
+  KM.clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  KM.timecode = (sec) => U.timecode(sec, 30);
+  KM.decimal = U.decimal;
+  KM.duration = U.duration;
+  KM.signed = (sec) => U.signedSeconds(sec, 2);
+
+  const reduce = root.matchMedia ? root.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+  KM.reducedMotion = () => reduce.matches;
+
+  /** Calls onChange(true/false) as the element enters or leaves the viewport. */
+  KM.observe = (el, onChange, options) => {
+    if (typeof IntersectionObserver !== 'function') {
+      onChange(true);
+      return () => {};
+    }
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) onChange(e.isIntersecting, e);
+    }, options || { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  };
+
+  /** True while the user is typing into a form field (keyboard shortcuts stay out of the way). */
+  KM.isTyping = (el) => !!el && (el.isContentEditable || /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName));
+
+  /** Runs fn on the next animation frame, at most once per frame. */
+  KM.rafThrottle = (fn) => {
+    let queued = false;
+    return (...args) => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        fn(...args);
+      });
+    };
+  };
+
+  // ---- Components --------------------------------------------------------------
 
   /** Radio-style segmented control with a sliding thumb. */
   KM.segmented = (el, onChange) => {
@@ -116,25 +162,60 @@
         }
       }
     });
-    return { open, close };
+    return { open, close, get isOpen() { return !el.hidden; } };
   };
 
-  /** Short confirmation message in the corner of the screen. */
-  KM.toast = (text) => {
+  const TOAST_ICONS = {
+    check: '<svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+    warn: '<svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5V13M12 16.4v.1M10.3 4 2.7 17.2A2 2 0 0 0 4.4 20h15.2a2 2 0 0 0 1.7-2.8L13.7 4a2 2 0 0 0-3.4 0z"/></svg>',
+  };
+
+  /**
+   * Short message in the corner of the screen. `options.action` ({label, onClick}) adds a button,
+   * and the message then stays longer; `options.tone: 'warn'` shows a warning sign instead of a tick.
+   */
+  KM.toast = (text, options) => {
+    const o = options || {};
     const host = KM.$('#toasts');
-    if (!host) return;
+    if (!host) return null;
     const t = document.createElement('div');
     t.className = 'toast';
     t.setAttribute('role', 'status');
-    t.innerHTML = '<svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>';
+    t.innerHTML = TOAST_ICONS[o.tone === 'warn' ? 'warn' : 'check'];
     const span = document.createElement('span');
     span.textContent = text;
     t.appendChild(span);
-    host.appendChild(t);
-    setTimeout(() => {
+    let timer = 0;
+    const close = () => {
+      if (t.classList.contains('is-leaving')) return;
+      clearTimeout(timer);
       t.classList.add('is-leaving');
       setTimeout(() => t.remove(), 240);
-    }, 3200);
+    };
+    if (o.action) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'toast-action';
+      b.textContent = o.action.label;
+      b.addEventListener('click', () => {
+        close();
+        o.action.onClick();
+      });
+      t.appendChild(b);
+      t.classList.add('has-action');
+    }
+    host.appendChild(t);
+    // A message with a button waits while the pointer or the keyboard focus is on it.
+    const arm = () => {
+      clearTimeout(timer);
+      timer = setTimeout(close, o.action ? 7000 : 3200);
+    };
+    t.addEventListener('pointerenter', () => clearTimeout(timer));
+    t.addEventListener('pointerleave', arm);
+    t.addEventListener('focusin', () => clearTimeout(timer));
+    t.addEventListener('focusout', arm);
+    arm();
+    return { close };
   };
 
   /** Accordion whose panels slide open; collapsed panels are hidden from assistive tech. */

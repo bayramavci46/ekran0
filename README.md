@@ -2,7 +2,8 @@
 
 Ekran kaydını ve kamera kaydını tek bir videoda birleştiren, tarayıcıda çalışan bir video düzenleyici.
 Ekran kaydı arka planda tam ekran oynar. Kamera kaydı onun üstünde, istediğiniz yere taşıyıp
-istediğiniz boyuta getirebildiğiniz bir pencere olarak durur. Sonuç MP4 ya da WebM olarak kaydedilir.
+istediğiniz boyuta getirebildiğiniz bir pencere olarak durur. İki kayıt farklı anlarda başladıysa editör
+seslerini dinleyip onları kendisi eşler. Sonuç MP4 ya da WebM olarak kaydedilir.
 
 Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, tarayıcının içinde işlenir.
 
@@ -13,8 +14,10 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 - **Büyütme ve küçültme:** köşeden çekince oran korunur (Shift ile serbest), kenardan çekince pencerenin
   şekli değişir; görüntü bozulmaz, kırpılır. Fare tekerleği, boyut kaydırıcısı ve `+` / `−` tuşları da çalışır.
 - **Görünüm:** dikdörtgen, yuvarlak köşe ya da daire; çerçeve kalınlığı ve rengi, gölge, ayna görüntüsü.
-- **Senkron:** iki kayıt farklı anlarda başladıysa kamera kaydını saniye saniye kaydırın ya da zaman
-  çizelgesindeki kamera klibini sürükleyin.
+- **Otomatik senkron:** iki kayıt yüklenince editör seslerini dinler ve kamera kaydını ekran kaydıyla kendisi
+  hizalar. Konuşmanız, bir el çırpması ya da tuş sesleri yeter. Senkron kartında eşleşen anı iki ses dalgası
+  olarak görürsünüz; sonuç tek tıkla geri alınır. Editör emin olamazsa hiçbir şeyi değiştirmez, yalnızca öneri sunar.
+- **Elle senkron:** kamera kaydını saniye saniye kaydırın ya da zaman çizelgesindeki kamera klibini sürükleyin.
 - **Kesme:** başlangıç ve bitiş noktalarını seçerek yalnızca istediğiniz bölümü dışa aktarın.
 - **Ses:** iki kaydın sesi ayrı ayrı açılıp kısılabilir; dışa aktarırken karıştırılır.
 - **Geri al / yinele** ve klavye kısayolları.
@@ -39,8 +42,9 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 1. Sağdaki **Kayıtlar** bölümünden ekran kaydını ve kamera kaydını seçin ya da dosyaları sayfaya sürükleyip bırakın.
    Yanlış yere yüklediyseniz **Yerlerini değiştir** düğmesine basın.
 2. Önizlemedeki kamera penceresini sürükleyerek taşıyın, köşelerinden çekerek büyütüp küçültün.
-3. Kayıtlar aynı anda başlamadıysa **Senkron** bölümünden ya da zaman çizelgesindeki kamera klibini sürükleyerek
-   hizalayın. Kayda başlarken bir kez el çırparsanız o anı iki kayıtta eşlemek en kolay yoldur.
+3. Kayıtlar aynı anda başlamadıysa editör iki kaydın sesinden kaydırmayı kendisi bulur ve uygular (**Senkron**
+   kartındaki anahtarla kapatılabilir). İnce ayar için kamera klibini zaman çizelgesinde sürükleyin ya da
+   Senkron kartındaki düğmeleri kullanın. Kayda başlarken bir kez el çırpmak eşlemeyi kolaylaştırır.
 4. Videonun başını ve sonunu kırpmak için oynatma konumunu ayarlayıp `I` (başlangıç) ve `O` (bitiş) tuşlarına basın
    ya da zaman çizelgesindeki `[` `]` işaretlerini sürükleyin.
 5. **Dışa aktar** bölümünden çözünürlük, kare hızı, kalite ve biçimi seçip **Videoyu dışa aktar** düğmesine basın.
@@ -57,6 +61,7 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 | Kamera seçiliyken ok tuşları | Kamerayı taşı (Shift ile daha hızlı) |
 | Kamera seçiliyken `+` / `−` | Kamerayı büyüt / küçült |
 | `Ctrl` + `Z` / `Ctrl` + `Shift` + `Z` | Geri al / yinele |
+| `?` | Kısayol listesini aç |
 
 ## Tarayıcı desteği
 
@@ -67,6 +72,8 @@ Videolarınız hiçbir sunucuya yüklenmez; her şey kendi bilgisayarınızda, t
 - **Diğer tarayıcılar:** uygulama, tarayıcının kodlayabildiği biçimi kendisi seçer ve **Biçim** menüsünde gösterir
   (ör. WebM: VP9 + Opus). Hızlı yöntem kullanılamıyorsa video gerçek zamanlı oynatılarak kaydedilir; bu
   sırada sekme açık ve görünür kalmalıdır.
+- **Otomatik senkron** sesi çözebilen her tarayıcıda çalışır: Chrome, Edge, Firefox ve Safari 26 ve sonrası
+  WebCodecs ile; daha eski Safari sürümleri Web Audio ile.
 - Tarayıcının oynatamadığı dosyalar (ör. bazı MKV ya da H.265 kayıtları) açılmaz; bu durumda kaydı MP4 (H.264)
   ya da WebM olarak dışa aktarıp yeniden deneyin.
 
@@ -76,22 +83,27 @@ Derleme adımı ve bağımlılık yoktur; dosyalar doğrudan tarayıcıda çalı
 
 ```
 index.html            tanıtım sitesi
-site/                 sitenin görünümü (site.css) ve küçük canlı demoları (site/js)
+site/                 sitenin kendi görünümü (site.css) ve küçük canlı demoları (site/js)
 editor.html           editörün arayüzü
-css/app.css           editörün görünümü (açık ve koyu tema)
+css/base.css          ortak tasarım sistemi: renkler, yazılar, hareket ve bileşenler; site ile editör birlikte kullanır
+css/app.css           editörün yerleşimi (açık ve koyu tema)
+js/ui.js              ortak arayüz parçaları: kayan seçici, açılır panel, çekmece, bildirim, akordeon
 js/geometry.js        kamera penceresi hesapları: taşıma, boyutlandırma, yapışma, kırpma
 js/renderer.js        bir kareyi çizer; önizleme ve dışa aktarma aynı kodu kullanır
 js/player.js          iki videoyu birlikte oynatır ve senkron tutar
 js/stage.js           önizlemedeki kamera penceresiyle etkileşim
 js/timeline.js        zaman çizelgesi: oynatma konumu, kesme işaretleri, kamera klibi
 js/audio-mix.js       dışa aktarmada iki sesi yeniden örnekleyip karıştırır
+js/auto-sync.js       otomatik senkron: iki kaydın sesinden ne kadar kaydığını bulur
 js/export.js          dışa aktarma: hızlı yol (Mediabunny + WebCodecs) ve gerçek zamanlı yedek yol
 js/demo.js            hiç kayıt yüklenmemişken gösterilen örnek görüntü
 js/app.js             durum, kontroller, geri al/yinele, tercihler
 vendor/               Mediabunny 1.60.0 (MPL-2.0, lisans metni klasörde)
 ```
 
-- `npm test` — birim testleri (Node 18 ve üzeri).
-- `npm run test:e2e` — gerçek tarayıcıda uçtan uca deneme: örnek videolar üretir, kamerayı taşır ve
-  boyutlandırır, dışa aktarır ve sonucu `ffprobe` ile denetler. ffmpeg ve Playwright gerektirir.
+- `npm test` — birim testleri (Node 18 ve üzeri), otomatik senkron için yankılı, gürültülü ve farklı
+  örnekleme hızlı sentetik kayıtlar dahil.
+- `npm run test:e2e` — gerçek tarayıcıda uçtan uca deneme: aynı sesi duyan iki örnek video üretir, otomatik
+  senkronun kaydırmayı bulduğunu denetler, kamerayı taşır ve boyutlandırır, dışa aktarır ve sonucu `ffprobe` ile
+  denetler. ffmpeg ve Playwright gerektirir.
 - `npm run build` — tek dosyalık sürüm (`--cdn` ile Mediabunny'yi jsDelivr'den yükleyen küçük sürüm).

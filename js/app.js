@@ -1,13 +1,15 @@
 /*
  * Wires the editor together: state, file loading, preview rendering, controls,
- * undo/redo, saved preferences and the export flow.
+ * undo/redo, automatic sync, saved preferences and the export flow.
  */
 (function (root) {
   'use strict';
   const PE = root.PipEditor;
+  const KM = root.KM;
   const U = PE.util;
   const G = PE.geometry;
   const exporter = PE.exporter;
+  const autoSync = PE.autoSync;
   const $ = (id) => document.getElementById(id);
 
   const STORAGE_KEY = 'ekran-kamera-kurgu:v1';
@@ -30,13 +32,20 @@
     plan: null,
     exporting: null,
     result: null,
+    // Automatic sync: whether it runs on load, and the last run ({status, result, before, ...}).
+    autoSync: true,
+    sync: { status: 'idle' },
   };
 
   const els = {
     monitor: $('monitor'), frame: $('frame'), canvas: $('preview'), camBox: $('camBox'),
     guides: $('guides'), readout: $('camReadout'), badge: $('frameBadge'), dropVeil: $('dropVeil'),
-    status: $('projectStatus'), undo: $('undoBtn'), redo: $('redoBtn'),
-    shortcutsBtn: $('shortcutsBtn'), shortcuts: $('shortcuts'),
+    status: $('projectStatus'), statusText: $('projectStatusText'), undo: $('undoBtn'), redo: $('redoBtn'),
+    shortcutsBtn: $('shortcutsBtn'), exportJump: $('exportJumpBtn'), exportPanel: $('exportPanel'),
+    shellFile: $('shellFile'), shellMeta: $('shellMeta'), shellSync: $('shellSync'), shellSyncText: $('shellSyncText'),
+    syncBtn: $('autoSyncBtn'), syncLabel: $('autoSyncLabel'), applySync: $('applySyncBtn'),
+    autoSyncOnLoad: $('autoSyncOnLoad'), syncStatus: $('syncStatus'), syncStatusText: $('syncStatusText'),
+    syncScope: $('syncScope'), syncCanvas: $('syncCanvas'), syncMeta: $('syncMeta'), timeline: $('timeline'),
     play: $('playBtn'), toStart: $('toStartBtn'), toEnd: $('toEndBtn'),
     prevFrame: $('prevFrameBtn'), nextFrame: $('nextFrameBtn'),
     tcNow: $('tcNow'), tcTotal: $('tcTotal'), markIn: $('markInBtn'), markOut: $('markOutBtn'),
@@ -132,11 +141,12 @@
     if ([24, 25, 30, 50, 60].includes(out.fps)) state.output.fps = out.fps;
     if (['very-high', 'high', 'medium', 'low'].includes(out.quality)) state.output.quality = out.quality;
     if (['mp4', 'webm'].includes(out.format)) state.output.format = out.format;
+    if (typeof saved.autoSync === 'boolean') state.autoSync = saved.autoSync;
   }
 
   function savePrefs() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ look: state.look, output: state.output }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ look: state.look, output: state.output, autoSync: state.autoSync }));
     } catch (err) {
       // Storage can be unavailable (private mode); preferences are a convenience only.
     }
@@ -329,6 +339,8 @@
     syncCamera();
   }
 
+  const shapeControl = KM.segmented(els.shapeGroup, setShape);
+
   // ---- Media loading --------------------------------------------------------
 
   function probeDuration(el) {
@@ -481,17 +493,25 @@
         el.load();
       }
     };
+    const offset = state.offset;
+    const sync = state.sync;
     try {
       await Promise.all([attach('screen', camera), attach('camera', screen)]);
       state.media.screen = camera;
       state.media.camera = screen;
-      mediaChanged(oldFrame, 'both');
+      // The same moment seen from the other recording: the offset changes sign.
+      mediaChanged(oldFrame, 'both', { offset: -offset, sync: swappedSync(sync) });
     } catch (err) {
       showLoadError('Kayıtların yeri değiştirilemedi.');
     }
   }
 
-  function mediaChanged(oldFrame, slot) {
+  /**
+   * @param {string} slot 'screen', 'camera' or 'both'
+   * @param {{offset: number, sync: object}} [keep] timing that stays valid (after a swap)
+   */
+  function mediaChanged(oldFrame, slot, keep) {
+    stopAutoSync();
     const { screen, camera } = state.media;
     player.hasScreen = !!screen;
     player.hasCamera = !!camera;
@@ -501,7 +521,8 @@
       updateBox((b, W, H) => G.withAspect(b, cameraAspect(), W, H));
     }
     ensureBox();
-    state.offset = 0;
+    state.offset = keep ? keep.offset : 0;
+    state.sync = keep ? keep.sync : { status: 'idle' };
     if (slot !== 'camera' || state.trim.end <= 0) {
       state.trim = { start: 0, end: screen ? screen.duration : 0 };
     }
@@ -514,6 +535,7 @@
     fitFrame();
     syncAll();
     refreshPlan();
+    if (!keep && screen && camera && state.autoSync) runAutoSync('load');
   }
 
   function applyPlayerSettings() {
@@ -537,15 +559,64 @@
     syncUndo();
   }
 
+  /** Range inputs show their value as an amber fill (WebKit has no ::-moz-range-progress). */
+  function paintRange(input) {
+    const min = Number(input.min) || 0;
+    const max = Number(input.max) || 100;
+    const p = max > min ? ((Number(input.value) - min) / (max - min)) * 100 : 0;
+    input.style.setProperty('--fill', `${G.clamp(p, 0, 100).toFixed(2)}%`);
+  }
+
+  function setRange(input, value) {
+    input.value = value;
+    paintRange(input);
+  }
+
+  function setStatus(chip, textEl, tone, text) {
+    if (tone) chip.dataset.tone = tone;
+    else delete chip.dataset.tone;
+    if (textEl.textContent !== text) textEl.textContent = text;
+  }
+
   function syncStatus() {
     const { screen, camera } = state.media;
     els.badge.hidden = !isDemo();
-    if (isDemo()) {
-      els.status.textContent = 'Örnek görüntü açık';
-      return;
+    let tone = '';
+    let text = 'Örnek görüntü';
+    if (state.exporting) {
+      tone = 'busy';
+      text = 'Dışa aktarılıyor';
+    } else if (screen && camera) {
+      tone = 'ok';
+      text = 'Ekran ve kamera hazır';
+    } else if (screen) {
+      tone = 'ok';
+      text = 'Ekran kaydı hazır · kamera yok';
+    } else if (camera) {
+      tone = 'warn';
+      text = 'Ekran kaydı bekleniyor';
     }
-    const part = (m, label) => (m ? `${label} ${m.width}×${m.height}` : `${label} yok`);
-    els.status.textContent = `${part(screen, 'Ekran')} · ${part(camera, 'Kamera')}`;
+    setStatus(els.status, els.statusText, tone, text);
+    syncShell();
+  }
+
+  /** The line above the monitor: what is playing, its size and length, and the camera offset. */
+  function syncShell() {
+    const { screen, camera } = state.media;
+    const f = frameSize();
+    if (screen) {
+      els.shellFile.textContent = screen.name;
+      els.shellMeta.textContent = `${f.width} × ${f.height} · ${U.clock(screen.duration)}`;
+    } else if (camera) {
+      els.shellFile.textContent = 'Ekran kaydı yok';
+      els.shellMeta.textContent = '';
+    } else {
+      els.shellFile.textContent = 'Örnek görüntü';
+      els.shellMeta.textContent = `${f.width} × ${f.height}`;
+    }
+    const both = !!screen && !!camera;
+    els.shellSync.hidden = !both;
+    if (both) els.shellSyncText.textContent = `Kamera ${U.signedSeconds(state.offset, 2)}`;
   }
 
   function mediaMeta(m) {
@@ -586,7 +657,7 @@
 
   function syncCameraControls() {
     const L = state.look;
-    els.size.value = Math.round(L.box.w * 100);
+    setRange(els.size, Math.round(L.box.w * 100));
     els.sizeOut.textContent = U.percent(L.box.w);
     const pos = matchingPosition();
     for (const b of document.querySelectorAll('.pos-grid button')) {
@@ -596,13 +667,11 @@
 
   function syncCamera() {
     const L = state.look;
-    for (const b of els.shapeGroup.querySelectorAll('button')) {
-      b.setAttribute('aria-checked', String(b.dataset.shape === L.shape));
-    }
+    shapeControl.set(L.shape);
     els.radiusField.hidden = L.shape !== 'rounded';
-    els.radius.value = Math.round(L.radius * 100);
+    setRange(els.radius, Math.round(L.radius * 100));
     els.radiusOut.textContent = U.percent(L.radius);
-    els.border.value = L.borderWidth;
+    setRange(els.border, L.borderWidth);
     els.borderOut.textContent = L.borderWidth === 0 ? 'yok' : `${L.borderWidth} px`;
     let preset = false;
     for (const s of els.swatches.querySelectorAll('.swatch[data-color]')) {
@@ -626,7 +695,7 @@
       const a = state.audio[slot];
       const m = state.media[slot];
       const silent = m && m.analysis && m.analysis.readable && !m.analysis.audio;
-      els.vol[slot].value = Math.round(a.volume * 100);
+      setRange(els.vol[slot], Math.round(a.volume * 100));
       els.vol[slot].disabled = !!silent;
       els.mute[slot].disabled = !!silent;
       els.mute[slot].setAttribute('aria-pressed', String(a.muted));
@@ -641,6 +710,8 @@
     els.offset.disabled = !has;
     for (const b of document.querySelectorAll('[data-nudge]')) b.disabled = !has;
     els.align.disabled = !has;
+    syncShell();
+    syncSyncPanel();
   }
 
   function syncTransport() {
@@ -731,7 +802,10 @@
     els.outFormat.value = formatId();
     const busy = !!state.exporting;
     for (const s of [els.outRes, els.outFps, els.outQuality, els.outFormat]) s.disabled = busy;
-    els.exportBtn.disabled = busy || !state.media.screen || !state.plan || state.plan.method === 'none';
+    // While the sync is still listening the offset may change, so the export waits for it.
+    const listening = state.sync.status === 'running';
+    els.exportBtn.disabled = busy || listening || !state.media.screen || !state.plan || state.plan.method === 'none';
+    els.exportBtn.textContent = listening ? 'Senkron bekleniyor…' : 'Videoyu dışa aktar';
   }
 
   // ---- Export ----------------------------------------------------------------
@@ -816,8 +890,9 @@
     if (p < 1 && now - progressShownAt < 100) return;
     progressShownAt = now;
     const pct = Math.max(0, Math.min(1, p));
-    els.progressBar.style.width = `${(pct * 100).toFixed(1)}%`;
+    els.progressBar.style.setProperty('--p', pct.toFixed(4));
     els.progressWrap.setAttribute('aria-valuenow', String(Math.round(pct * 100)));
+    setStatus(els.status, els.statusText, 'busy', `Dışa aktarılıyor · ${U.percent(pct)}`);
     const total = ex.job.trimEnd - ex.job.trimStart;
     const done = pct * total;
     const elapsed = (now - ex.started) / 1000;
@@ -907,6 +982,7 @@
       if (wakeLock) wakeLock.release().catch(() => {});
       wakeLock = null;
       syncExportControls();
+      syncStatus();
     }
   }
 
@@ -942,6 +1018,8 @@
     if (onDisk) els.resultText.append('Kaydedildi: ', strong, ` (${U.bytes(blob.size)})`);
     else els.resultText.append(strong, ` hazır (${U.bytes(blob.size)}).`);
     els.result.hidden = false;
+    els.result.scrollIntoView({ block: 'nearest', behavior: KM.reducedMotion() ? 'auto' : 'smooth' });
+    KM.toast(onDisk ? `Kaydedildi · ${name}, ${U.bytes(blob.size)}` : `Video hazır · ${name}, ${U.bytes(blob.size)}`);
     const downloads = onDisk ? false : await getDownloads();
     els.download.hidden = onDisk || downloads === null;
     if (!onDisk && downloads === null) {
@@ -995,7 +1073,7 @@
       if (phase === 'commit') commit();
     },
     onOffset(o, phase) {
-      setOffset(o, phase === 'commit');
+      userOffset(o, phase === 'commit');
     },
   });
 
@@ -1012,6 +1090,233 @@
     syncTimeline();
     requestRender();
     if (commitNow) commit();
+  }
+
+  /** Offsets set by hand stop a sync that is still listening, so its answer cannot overwrite them. */
+  function userOffset(value, commitNow) {
+    if (state.sync.status === 'running') {
+      stopAutoSync();
+      state.sync = { status: 'stopped' };
+      syncSyncPanel();
+      syncExportControls();
+    }
+    setOffset(value, commitNow);
+  }
+
+  // ---- Automatic sync ------------------------------------------------------------------
+
+  let syncSeq = 0;
+  const SCOPE_SPAN = 6; // seconds of sound shown around the moment the recordings were matched on
+
+  /** Stops a sync that is still listening; its answer, if it comes, is ignored. */
+  function stopAutoSync() {
+    syncSeq++;
+    if (state.sync.status === 'running') state.sync.controller.abort();
+  }
+
+  /**
+   * Listens to both recordings and moves the camera to where their sounds line up.
+   * @param {'load'|'button'} trigger
+   */
+  async function runAutoSync(trigger) {
+    const { screen, camera } = state.media;
+    if (!screen || !camera || state.exporting) return;
+    stopAutoSync();
+    const seq = syncSeq;
+    const controller = new AbortController();
+    const before = state.offset;
+    state.sync = { status: 'running', progress: 0, controller, trigger };
+    syncSyncPanel();
+    syncExportControls();
+    let next;
+    try {
+      const MB = await exporter.getMediabunny();
+      const result = await autoSync.syncRecordings(MB, screen, camera, {
+        signal: controller.signal,
+        onProgress(p) {
+          if (seq !== syncSeq) return;
+          state.sync.progress = p;
+          syncSyncStatus();
+        },
+      });
+      next = { status: result.status, result, trigger };
+    } catch (err) {
+      if (seq !== syncSeq) return;
+      if (err && err.name === 'AbortError') next = { status: 'stopped' };
+      else {
+        console.error(err);
+        next = { status: 'error', trigger };
+      }
+    }
+    // A newer run, a new recording or a hand-set offset took over in the meantime.
+    if (seq !== syncSeq) return;
+    state.sync = next;
+    if (next.status === 'ok') {
+      setOffset(next.result.offset, true);
+      const moved = Math.abs(state.offset - before) >= 0.0005;
+      KM.toast(moved ? `Senkronlandı · kamera ${U.signedSeconds(state.offset, 2)}` : 'Kayıtlar zaten eşleşiyor', {
+        action: moved ? { label: 'Geri al', onClick: () => userOffset(before, true) } : null,
+      });
+    } else if (next.status !== 'stopped') {
+      KM.toast({
+        weak: 'Senkron önerisi hazır · kontrol edip uygulayın',
+        unsure: 'Otomatik senkron: ortak ses bulunamadı',
+        'no-audio-screen': 'Otomatik senkron: ekran kaydında ses yok',
+        'no-audio-camera': 'Otomatik senkron: kamera kaydında ses yok',
+        unsupported: 'Otomatik senkron bu tarayıcıda çalışmıyor',
+        'too-short': 'Otomatik senkron: kayıtlar çok kısa',
+      }[next.status] || 'Otomatik senkron: ses okunamadı', { tone: 'warn' });
+    }
+    syncSyncPanel();
+    syncExportControls();
+  }
+
+  /** After the recordings swap places, a finished match still holds, seen from the other side. */
+  function swappedSync(sync) {
+    const r = sync.result;
+    if (!r || !r.screen || (sync.status !== 'ok' && sync.status !== 'weak')) return { status: 'idle' };
+    return {
+      ...sync,
+      result: {
+        ...r,
+        screen: r.camera,
+        camera: r.screen,
+        offset: -r.offset,
+        anchor: r.anchor === null ? null : r.anchor - r.offset,
+      },
+    };
+  }
+
+  function syncProblem(status) {
+    return {
+      weak: 'Ortak bir an bulundu ama kesin değil. Öneriyi kontrol edip uygulayabilirsiniz.',
+      unsure: 'İki kayıtta ortak bir ses bulunamadı. Kaydırmayı elle ayarlayın.',
+      'no-audio-screen': 'Ekran kaydında ses yok; otomatik senkron için iki kayıtta da ses olmalı.',
+      'no-audio-camera': 'Kamera kaydında ses yok; otomatik senkron için iki kayıtta da ses olmalı.',
+      unsupported: 'Bu tarayıcı kayıtların sesini çözemiyor. Kaydırmayı elle ayarlayın.',
+      'too-short': 'Kayıtlar otomatik senkron için çok kısa.',
+      error: 'Kayıtların sesi okunamadı. Kaydırmayı elle ayarlayın.',
+    }[status] || '';
+  }
+
+  function syncSyncStatus() {
+    const s = state.sync;
+    const both = !!state.media.screen && !!state.media.camera;
+    let tone = '';
+    let text = 'Hazır';
+    if (!both) text = 'İki kayıt bekleniyor';
+    else if (s.status === 'running') {
+      tone = 'busy';
+      text = `Dinleniyor · ${U.percent(s.progress || 0)}`;
+    } else if (s.status === 'ok') {
+      const kept = Math.abs(state.offset - s.result.offset) < 0.0005;
+      tone = kept ? 'ok' : '';
+      text = kept ? 'Eşleşti' : 'Elle ayarlandı';
+    } else if (s.status === 'weak') {
+      tone = 'warn';
+      text = 'Emin değil';
+    } else if (s.status === 'stopped') {
+      text = 'Durduruldu';
+    } else if (s.status === 'error') {
+      tone = 'bad';
+      text = 'Ses okunamadı';
+    } else if (s.status !== 'idle') {
+      tone = 'warn';
+      text = {
+        unsure: 'Ortak ses yok',
+        'no-audio-screen': 'Ekranda ses yok',
+        'no-audio-camera': 'Kamerada ses yok',
+        unsupported: 'Desteklenmiyor',
+        'too-short': 'Çok kısa',
+      }[s.status] || 'Bulunamadı';
+    }
+    setStatus(els.syncStatus, els.syncStatusText, tone, text);
+  }
+
+  function syncSyncPanel() {
+    const s = state.sync;
+    const both = !!state.media.screen && !!state.media.camera;
+    const running = s.status === 'running';
+    syncSyncStatus();
+    els.syncBtn.disabled = !both || !!state.exporting;
+    els.syncBtn.classList.toggle('is-running', running);
+    els.syncLabel.textContent = running ? 'Durdur' : s.status === 'ok' ? 'Yeniden eşle' : 'Sesten otomatik eşle';
+    els.timeline.classList.toggle('is-syncing', running);
+    els.autoSyncOnLoad.checked = state.autoSync;
+
+    const suggestion = both && s.status === 'weak' ? s.result.offset : null;
+    els.applySync.hidden = suggestion === null;
+    if (suggestion !== null) els.applySync.textContent = `Öneriyi uygula · ${U.signedSeconds(suggestion, 2)}`;
+
+    // One line under the scope: the matched moment and the confidence, or what went wrong.
+    const meta = els.syncMeta;
+    meta.textContent = '';
+    meta.classList.remove('is-note');
+    if (both && (s.status === 'ok' || s.status === 'weak') && s.result.anchor !== null) {
+      const at = document.createElement('span');
+      at.textContent = `${s.status === 'weak' ? 'Önerilen an' : 'Eşleşen an'} ${U.clock(s.result.anchor)}`;
+      const how = document.createElement('span');
+      how.textContent = { sure: 'güven yüksek', likely: 'güven orta' }[s.result.confidence] || 'güven düşük';
+      meta.append(at, how);
+    } else if (both && s.status !== 'idle' && s.status !== 'running' && s.status !== 'stopped' && s.status !== 'ok') {
+      meta.textContent = syncProblem(s.status);
+      meta.classList.add('is-note');
+    }
+    meta.hidden = !meta.textContent;
+    drawSyncScope();
+  }
+
+  /**
+   * Both recordings' loudness around the matched moment, the camera drawn where the current
+   * offset puts it. When the two peaks sit on the centre line, the recordings are in sync.
+   */
+  function drawSyncScope() {
+    const s = state.sync;
+    const r = s.result;
+    const both = !!state.media.screen && !!state.media.camera;
+    const show = both && !!r && !!r.screen && (s.status === 'ok' || s.status === 'weak') && r.anchor !== null;
+    els.syncScope.hidden = !show;
+    if (!show) return;
+    const canvas = els.syncCanvas;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.round(canvas.clientWidth * dpr);
+    const h = Math.round(canvas.clientHeight * dpr);
+    if (!w || !h) return;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const g = canvas.getContext('2d');
+    g.clearRect(0, 0, w, h);
+    const HOP = autoSync.HOP;
+    const offset = state.offset;
+    const start = r.anchor - SCOPE_SPAN / 2;
+    const step = 5 * dpr;
+    const bars = Math.floor(w / step);
+    const per = SCOPE_SPAN / bars;
+    const peak = (level, t) => {
+      const a = Math.max(0, Math.floor(t / HOP));
+      const b = Math.min(level.length, Math.ceil((t + per) / HOP));
+      let m = 0;
+      for (let k = a; k < b; k++) if (level[k] > m) m = level[k];
+      return m;
+    };
+    // The matched moment is highlighted in both lanes; the camera's moves off the line when the offset does.
+    const lane = (level, top, shift, moment, dim, bright) => {
+      const mid = top + h / 4 + 4 * dpr;
+      const max = h / 4 - 8 * dpr;
+      for (let i = 0; i < bars; i++) {
+        const t = start + i * per;
+        const v = peak(level, t - shift);
+        const bh = Math.max(dpr, v * max);
+        g.fillStyle = Math.abs(t + per / 2 - moment) < 0.2 ? bright : dim;
+        g.fillRect(i * step + dpr, mid - bh, step - 2 * dpr, bh * 2);
+      }
+    };
+    lane(r.screen.level, 0, 0, r.anchor, 'rgba(232, 238, 236, 0.3)', '#f0a73a');
+    lane(r.camera.level, h / 2, offset, r.anchor - r.offset + offset, 'rgba(95, 196, 187, 0.42)', '#5fc4bb');
+    g.fillStyle = 'rgba(240, 167, 58, 0.85)';
+    g.fillRect(Math.round(w / 2 - dpr / 2), 0, Math.max(1, Math.round(dpr)), h);
   }
 
   function setMark(which) {
@@ -1049,12 +1354,18 @@
   els.markOut.addEventListener('click', () => setMark('out'));
   els.undo.addEventListener('click', undo);
   els.redo.addEventListener('click', redo);
-  els.shortcutsBtn.addEventListener('click', () => {
-    const open = els.shortcuts.hidden;
-    els.shortcuts.hidden = !open;
-    els.shortcutsBtn.setAttribute('aria-expanded', String(open));
-    requestAnimationFrame(fitFrame);
+  const shortcuts = KM.drawer($('shortcuts'));
+  els.shortcutsBtn.addEventListener('click', () => shortcuts.open(els.shortcutsBtn));
+
+  // "Dışa aktar" in the top bar brings the export card into view and points at it.
+  els.exportJump.addEventListener('click', () => {
+    const panel = els.exportPanel;
+    panel.scrollIntoView({ block: 'nearest', behavior: KM.reducedMotion() ? 'auto' : 'smooth' });
+    panel.classList.remove('is-flash');
+    requestAnimationFrame(() => panel.classList.add('is-flash'));
+    if (!els.exportBtn.disabled) els.exportBtn.focus({ preventScroll: true });
   });
+  els.exportPanel.addEventListener('animationend', () => els.exportPanel.classList.remove('is-flash'));
 
   for (const slot of ['screen', 'camera']) {
     const input = els.inputs[slot];
@@ -1117,18 +1428,9 @@
     }
   });
 
-  els.shapeGroup.addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-shape]');
-    if (b) setShape(b.dataset.shape);
-  });
-  els.shapeGroup.addEventListener('keydown', (e) => {
-    const order = ['rect', 'rounded', 'circle'];
-    const dir = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
-    if (!dir) return;
-    e.preventDefault();
-    const next = order[(order.indexOf(state.look.shape) + dir + order.length) % order.length];
-    setShape(next);
-    els.shapeGroup.querySelector(`[data-shape="${next}"]`).focus();
+  // Every slider paints its own fill while it is dragged.
+  document.addEventListener('input', (e) => {
+    if (e.target instanceof HTMLInputElement && e.target.type === 'range') paintRange(e.target);
   });
 
   els.radius.addEventListener('input', () => {
@@ -1207,12 +1509,38 @@
     });
   }
 
-  els.offset.addEventListener('change', () => setOffset(els.offset.valueAsNumber, true));
+  els.offset.addEventListener('change', () => userOffset(els.offset.valueAsNumber, true));
   els.offset.addEventListener('blur', syncOffset);
   for (const b of document.querySelectorAll('[data-nudge]')) {
-    b.addEventListener('click', () => setOffset(state.offset + Number(b.dataset.nudge), true));
+    b.addEventListener('click', () => userOffset(state.offset + Number(b.dataset.nudge), true));
   }
-  els.align.addEventListener('click', () => setOffset(player.currentTime, true));
+  els.align.addEventListener('click', () => userOffset(player.currentTime, true));
+
+  els.syncBtn.addEventListener('click', () => {
+    if (state.sync.status !== 'running') {
+      runAutoSync('button');
+      return;
+    }
+    stopAutoSync();
+    state.sync = { status: 'stopped' };
+    syncSyncPanel();
+    syncExportControls();
+  });
+  els.applySync.addEventListener('click', () => {
+    const s = state.sync;
+    if (s.status !== 'weak') return;
+    const before = state.offset;
+    state.sync = { ...s, status: 'ok' };
+    userOffset(s.result.offset, true);
+    KM.toast(`Öneri uygulandı · kamera ${U.signedSeconds(state.offset, 2)}`, {
+      action: { label: 'Geri al', onClick: () => userOffset(before, true) },
+    });
+  });
+  els.autoSyncOnLoad.addEventListener('change', () => {
+    state.autoSync = els.autoSyncOnLoad.checked;
+    savePrefs();
+  });
+  if (typeof ResizeObserver === 'function') new ResizeObserver(() => drawSyncScope()).observe(els.syncScope);
 
   els.outRes.addEventListener('change', () => {
     state.output.preset = els.outRes.value;
@@ -1261,6 +1589,7 @@
   document.addEventListener('keydown', (e) => {
     const mod = e.ctrlKey || e.metaKey;
     const target = e.target;
+    if (shortcuts.isOpen) return;
     if (mod && !e.altKey && (e.key === 'z' || e.key === 'Z' || e.key === 'y')) {
       if (typing(target) && target.type !== 'range' && target.type !== 'checkbox') return;
       e.preventDefault();
@@ -1271,6 +1600,9 @@
     if (mod || e.altKey || typing(target) || state.exporting) return;
     const onButton = target && target.tagName === 'BUTTON';
     switch (e.key) {
+      case '?':
+        shortcuts.open(els.shortcutsBtn);
+        break;
       case ' ':
         if (onButton) return;
         e.preventDefault();
@@ -1340,5 +1672,5 @@
   });
 
   // Exposed for debugging and automated tests.
-  PE.app = { state, player, loadFile, startExport, buildJob, commit, undo, redo };
+  PE.app = { state, player, loadFile, startExport, buildJob, commit, undo, redo, runAutoSync };
 })(self);

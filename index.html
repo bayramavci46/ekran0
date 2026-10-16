@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="site/site.css">
 </head>
 <body>
@@ -142,9 +143,9 @@
           </li>
           <li class="how-step" data-step="3">
             <span class="step-no">03</span>
-            <h3>Senkronlayın ve kırpın</h3>
-            <p>Kayıtlar farklı anlarda başladıysa kamera klibini zaman çizelgesinde kaydırın. Başını ve sonunu <kbd>I</kbd> ve <kbd>O</kbd> tuşlarıyla kesin.</p>
-            <p class="step-meta">Kare kare kaydırma · Geri al</p>
+            <h3>Eşleyin ve kırpın</h3>
+            <p>Kayıtlar farklı anlarda başladıysa editör iki kaydın sesini dinleyip kamerayı kendisi hizalar. Başını ve sonunu <kbd>I</kbd> ve <kbd>O</kbd> tuşlarıyla kesin.</p>
+            <p class="step-meta">Sesten otomatik senkron · Elle ince ayar · Geri al</p>
           </li>
           <li class="how-step" data-step="4">
             <span class="step-no">04</span>
@@ -205,8 +206,8 @@
 
         <article class="card card-sync" aria-labelledby="syncTitle">
           <div class="card-copy">
-            <h3 id="syncTitle">El çırpın, eşleyin.</h3>
-            <p>Kayıtlar farklı anlarda başladıysa kamera izini kaydırın. Başta bir el çırpması iki kayıtta da görünür bir iz bırakır.</p>
+            <h3 id="syncTitle">Sesten otomatik senkron.</h3>
+            <p>Editör iki kaydın sesini dinler ve kamerayı kendisi hizalar. Konuşmanız, bir el çırpması ya da tuş sesleri yeter. İsterseniz izi elle de kaydırırsınız.</p>
           </div>
           <div class="sync">
             <div class="sync-lane">
@@ -223,7 +224,10 @@
           </div>
           <div class="sync-foot">
             <span class="status" id="syncStatus" data-tone="warn"><span class="status-dot" aria-hidden="true"></span><span id="syncText">Kayık · +2,40 sn</span></span>
-            <button class="btn btn-ghost btn-sm" id="syncReset" type="button">Baştan</button>
+            <span class="sync-buttons">
+              <button class="btn btn-ghost btn-sm" id="syncReset" type="button">Baştan</button>
+              <button class="btn btn-primary btn-sm" id="syncAuto" type="button">Otomatik eşle</button>
+            </span>
           </div>
         </article>
 
@@ -344,7 +348,11 @@
         </div>
         <div class="acc-item">
           <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq4" id="faq4b">Ekran ve kamera kaydını nasıl alırım?<span class="acc-icon" aria-hidden="true"></span></button></h3>
-          <div class="acc-panel" id="faq4" role="region" aria-labelledby="faq4b" hidden><div><p>Ekran için OBS, QuickTime, Windows'taki Xbox Game Bar ya da telefonunuzun ekran kaydı; kamera için web kamerası ya da telefon yeterli. İki kaydı aynı anda başlatın ve başta bir kez el çırpın.</p></div></div>
+          <div class="acc-panel" id="faq4" role="region" aria-labelledby="faq4b" hidden><div><p>Ekran için OBS, QuickTime, Windows'taki Xbox Game Bar ya da telefonunuzun ekran kaydı; kamera için web kamerası ya da telefon yeterli. İki kaydı yaklaşık aynı anda başlatın; editör onları sesten eşler. Başta bir kez el çırpmak eşlemeyi kolaylaştırır.</p></div></div>
+        </div>
+        <div class="acc-item">
+          <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq7" id="faq7b">Otomatik senkron nasıl çalışır?<span class="acc-icon" aria-hidden="true"></span></button></h3>
+          <div class="acc-panel" id="faq7" role="region" aria-labelledby="faq7b" hidden><div><p>İki kayıt yüklenince editör ilk iki dakikalarının sesini dinler ve sesin aniden yükseldiği anları (heceler, el çırpması, tuş sesleri) karşılaştırır. En iyi örtüşen kayma uygulanır ve tek tıkla geri alınabilir. Emin olamazsa yalnızca öneri sunar, hiçbir şeyi değiştirmez. Bütün bunlar bilgisayarınızda olur.</p></div></div>
         </div>
         <div class="acc-item">
           <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq5" id="faq5b">iPhone'da çalışır mı?<span class="acc-icon" aria-hidden="true"></span></button></h3>
@@ -535,8 +543,7 @@
 
 <script src="js/util.js"></script>
 <script src="js/geometry.js"></script>
-<script src="site/js/core.js"></script>
-<script src="site/js/ui.js"></script>
+<script src="js/ui.js"></script>
 <script src="site/js/stage.js"></script>
 <script src="site/js/nav.js"></script>
 <script src="site/js/compat.js"></script>
