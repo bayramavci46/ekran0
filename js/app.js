@@ -1641,6 +1641,36 @@
     }
   });
 
+  // Commands from the desktop app's menu (desktop/main.js). They arrive with a user gesture,
+  // so file pickers and the save dialog may open.
+  window.addEventListener('kurgu:command', (e) => {
+    const el = document.activeElement;
+    const inText = typing(el) && el.type !== 'range' && el.type !== 'checkbox';
+    switch (e.detail) {
+      case 'undo':
+        if (inText) document.execCommand('undo');
+        else undo();
+        break;
+      case 'redo':
+        if (inText) document.execCommand('redo');
+        else redo();
+        break;
+      case 'open-screen':
+      case 'open-camera':
+        if (!state.exporting) els.inputs[e.detail === 'open-screen' ? 'screen' : 'camera'].click();
+        break;
+      case 'export':
+        if (!els.exportBtn.disabled) startExport(false);
+        else els.exportJump.click();
+        break;
+      case 'shortcuts':
+        shortcuts.open(els.shortcutsBtn);
+        break;
+      default:
+        break;
+    }
+  });
+
   if (typeof ResizeObserver === 'function') new ResizeObserver(() => fitFrame()).observe(els.monitor);
   if (stacked.addEventListener) stacked.addEventListener('change', fitFrame);
   else stacked.addListener(fitFrame);

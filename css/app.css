@@ -1615,3 +1615,34 @@ input[type="number"]::-webkit-outer-spin-button {
     font-size: 16px;
   }
 }
+
+/* ---- Desktop app ----------------------------------------------------------------------------
+   desktop/preload.js marks the page with data-desktop. There the top bar is also the window's
+   title bar: it moves the window and leaves room for the window buttons. */
+
+[data-desktop="mac"] .topbar,
+[data-desktop="win"] .topbar {
+  -webkit-app-region: drag;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+[data-desktop="mac"] .topbar button,
+[data-desktop="win"] .topbar button,
+[data-desktop] .drawer {
+  -webkit-app-region: no-drag;
+}
+
+/* macOS: the traffic lights sit at the left end of the bar. */
+[data-desktop="mac"] .topbar {
+  padding-left: 66px;
+}
+
+/* Windows: minimise, maximise and close are drawn over the right end (Window Controls Overlay). */
+[data-desktop="win"] .topbar {
+  padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, calc(100vw - 138px)) - 8px);
+}
+
+[data-desktop="win"] .drawer-panel {
+  padding-top: calc(var(--topbar-h) + 12px);
+}

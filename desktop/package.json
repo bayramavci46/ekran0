@@ -1,0 +1,94 @@
+{
+  "name": "kurgu-masasi",
+  "productName": "Kurgu Masası",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ekran kaydı ile kamera kaydını tek videoda birleştiren masaüstü video düzenleyici",
+  "author": "Bayram Avcı",
+  "homepage": "https://github.com/bayramavci46/ekran0",
+  "repository": "github:bayramavci46/ekran0",
+  "main": "main.js",
+  "scripts": {
+    "app": "node scripts/copy-app.mjs",
+    "start": "npm run app && electron .",
+    "dist": "npm run app && electron-builder --publish never",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "@fontsource/barlow": "5.3.0",
+    "@fontsource/barlow-condensed": "5.3.0",
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "electron": "44.5.1",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "io.github.bayramavci46.kurgumasasi",
+    "productName": "Kurgu Masası",
+    "executableName": "KurguMasasi",
+    "copyright": "© 2026 Bayram Avcı",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "smoke-renderer.js",
+      "app/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.video",
+      "icon": "build/icon.png",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "minimumSystemVersion": "12.0",
+      "artifactName": "Kurgu-Masasi-Mac.${ext}"
+    },
+    "dmg": {
+      "title": "Kurgu Masası",
+      "artifactName": "Kurgu-Masasi-Mac.${ext}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon-win.png",
+      "artifactName": "Kurgu-Masasi-Windows.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Kurgu Masası",
+      "uninstallDisplayName": "Kurgu Masası",
+      "installerLanguages": [
+        "tr_TR"
+      ],
+      "language": "1055",
+      "artifactName": "Kurgu-Masasi-Windows.${ext}"
+    },
+    "linux": {
+      "target": [
+        "dir"
+      ],
+      "category": "AudioVideo"
+    },
+    "publish": null
+  }
+}
