@@ -295,7 +295,53 @@
 
   // ---- Fast export ---------------------------------------------------------
 
+  // A decoder or encoder that stops answering (it happens in the iOS simulator) would leave the
+  // export waiting forever. Without progress for this long, the export ends with an error that
+  // offers the real-time export instead; cancelling ends it at once.
+  const STALL_MS = 30000;
+
+  /** Waits for `promise`, but not longer than `ms`. */
+  const settleWithin = (promise, ms) => Promise.race([
+    Promise.resolve(promise).catch(() => {}),
+    new Promise((resolve) => setTimeout(resolve, ms)),
+  ]);
+
   async function exportFast(job, chosen, { target, onProgress, signal }) {
+    const inner = new AbortController();
+    let stop = null;
+    const stopped = new Promise((resolve, reject) => { stop = reject; });
+    stopped.catch(() => {});
+    let timer = 0;
+    const end = (err) => {
+      stop(err);
+      inner.abort();
+      target.cancel();
+    };
+    const alive = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => end(new Error('Kodlayıcı 30 saniyedir yanıt vermiyor.')), STALL_MS);
+    };
+    const onAbort = () => end(abortError());
+    if (signal.aborted) throw abortError();
+    signal.addEventListener('abort', onAbort, { once: true });
+    alive();
+    try {
+      const work = encodeFast(job, chosen, {
+        target,
+        signal: inner.signal,
+        onProgress: (p) => {
+          alive();
+          onProgress(p);
+        },
+      });
+      return await Promise.race([work, stopped]);
+    } finally {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+    }
+  }
+
+  async function encodeFast(job, chosen, { target, onProgress, signal }) {
     const MB = await getMediabunny();
     const { width: W, height: H, fps } = job.output;
     const inputs = [];
@@ -443,7 +489,7 @@
     } catch (err) {
       target.cancel();
       if (output && output.state !== 'finalized' && output.state !== 'canceled') {
-        await output.cancel().catch(() => {});
+        await settleWithin(output.cancel(), 2000);
       }
       throw err;
     } finally {

@@ -7,8 +7,6 @@
  *
  *   node scripts/smoke-device.mjs android android/app/build/outputs/apk/debug/app-debug.apk
  *   node scripts/smoke-device.mjs ios build/sim/Build/Products/Debug-iphonesimulator/App.app
- *   node scripts/smoke-device.mjs ios --boot   (only starts the simulator, which takes minutes the
- *                                               first time, so it can get ready during the build)
  *
  * The app's log is printed as it comes, with the seconds since the start. A screenshot of the app
  * is saved as smoke-<platform>.png and, made small, printed to the log between KURGU_SCREENSHOT
@@ -20,11 +18,13 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 const APP_ID = 'io.github.bayramavci46.kurgumasasi';
 const TIMEOUT = 10 * 60 * 1000; // every step in the app has its own, shorter limit
 const [platform, appPath] = process.argv.slice(2);
-const bootOnly = platform === 'ios' && appPath === '--boot';
-if (!['android', 'ios'].includes(platform) || !appPath || (!bootOnly && !existsSync(appPath))) {
-  console.error('Kullanım: node scripts/smoke-device.mjs android|ios <apk ya da .app> | ios --boot');
+if (!['android', 'ios'].includes(platform) || !appPath || !existsSync(appPath)) {
+  console.error('Kullanım: node scripts/smoke-device.mjs android|ios <apk ya da .app>');
   process.exit(2);
 }
+// Capacitor's Android code sets safe-area CSS variables whenever the system bars change, also
+// before the page exists, and logs that it could not. The editor uses env(safe-area-inset-*).
+const NOT_OURS = /Error injecting safe area CSS/;
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], ...opts });
 
 let device = null;
@@ -46,9 +46,7 @@ if (platform === 'android') {
   if (!phones.length) throw new Error('no iPhone simulator');
   device = phones[phones.length - 1];
   console.log(`Simulator: ${device.name} (${device.runtime.split('.').pop()})`);
-  // Already started (or starting) when the workflow ran this with --boot.
   if (device.state === 'Shutdown') run('xcrun', ['simctl', 'boot', device.udid], { stdio: 'inherit' });
-  if (bootOnly) process.exit(0);
   run('xcrun', ['simctl', 'bootstatus', device.udid, '-b'], { stdio: 'inherit' });
   run('xcrun', ['simctl', 'install', device.udid, appPath], { stdio: 'inherit' });
   // The app's own output: Capacitor prints the page's console there in debug builds.
@@ -84,7 +82,7 @@ const result = await new Promise((resolve) => {
           clearTimeout(timer);
           resolve('done');
         }
-      } else if (/^E\/Capacitor\/Console|\[error\]/.test(line)) {
+      } else if (/^E\/Capacitor\/Console|\[error\]/.test(line) && !NOT_OURS.test(line)) {
         consoleErrors.push(line.replace(/^.*?Msg: |^.*?\[error\] - /, ''));
       }
     }
@@ -100,7 +98,7 @@ try {
   else run('xcrun', ['simctl', 'io', device.udid, 'screenshot', shot]);
   const small = `smoke-${platform}-small.jpg`;
   if (platform === 'ios') run('sips', ['-Z', '420', '-s', 'format', 'jpeg', '-s', 'formatOptions', '55', shot, '--out', small]);
-  else run('ffmpeg', ['-y', '-loglevel', 'error', '-i', shot, '-vf', 'scale=-2:420', '-q:v', '7', small]);
+  else run('java', ['scripts/Thumbnail.java', shot, small, '420']);
   console.log(`KURGU_SCREENSHOT_BEGIN ${readFileSync(small).toString('base64')} KURGU_SCREENSHOT_END`);
 } catch (err) {
   console.log(`No screenshot: ${err.message}`);

@@ -166,8 +166,6 @@ jobs:
       - name: Check that the release matches the app version
         if: env.RELEASE != ''
         run: node -e "const v = require('./package.json').version; if (v !== process.env.RELEASE.replace(/^v/, '')) { console.error('mobile/package.json has ' + v + ', the release is ' + process.env.RELEASE); process.exit(1); }"
-      - name: Start the simulator (it gets ready during the build)
-        run: node scripts/smoke-device.mjs ios --boot
       - run: npm ci
       - name: Build the test app for the simulator
         run: |
