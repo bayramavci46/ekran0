@@ -7,18 +7,22 @@
  *
  *   node scripts/smoke-device.mjs android android/app/build/outputs/apk/debug/app-debug.apk
  *   node scripts/smoke-device.mjs ios build/sim/Build/Products/Debug-iphonesimulator/App.app
+ *   node scripts/smoke-device.mjs ios --boot   (only starts the simulator, which takes minutes the
+ *                                               first time, so it can get ready during the build)
  *
- * A screenshot of the app is saved as smoke-<platform>.png and, made small, printed to the log
- * between KURGU_SCREENSHOT markers (a base64 JPEG), so it can be looked at without downloading.
+ * The app's log is printed as it comes, with the seconds since the start. A screenshot of the app
+ * is saved as smoke-<platform>.png and, made small, printed to the log between KURGU_SCREENSHOT
+ * markers (a base64 JPEG), so it can be looked at without downloading.
  */
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 const APP_ID = 'io.github.bayramavci46.kurgumasasi';
-const TIMEOUT = 8 * 60 * 1000;
+const TIMEOUT = 10 * 60 * 1000; // every step in the app has its own, shorter limit
 const [platform, appPath] = process.argv.slice(2);
-if (!['android', 'ios'].includes(platform) || !appPath || !existsSync(appPath)) {
-  console.error('Kullanım: node scripts/smoke-device.mjs android|ios <apk ya da .app>');
+const bootOnly = platform === 'ios' && appPath === '--boot';
+if (!['android', 'ios'].includes(platform) || !appPath || (!bootOnly && !existsSync(appPath))) {
+  console.error('Kullanım: node scripts/smoke-device.mjs android|ios <apk ya da .app> | ios --boot');
   process.exit(2);
 }
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], ...opts });
@@ -42,7 +46,9 @@ if (platform === 'android') {
   if (!phones.length) throw new Error('no iPhone simulator');
   device = phones[phones.length - 1];
   console.log(`Simulator: ${device.name} (${device.runtime.split('.').pop()})`);
-  if (device.state !== 'Booted') run('xcrun', ['simctl', 'boot', device.udid], { stdio: 'inherit' });
+  // Already started (or starting) when the workflow ran this with --boot.
+  if (device.state === 'Shutdown') run('xcrun', ['simctl', 'boot', device.udid], { stdio: 'inherit' });
+  if (bootOnly) process.exit(0);
   run('xcrun', ['simctl', 'bootstatus', device.udid, '-b'], { stdio: 'inherit' });
   run('xcrun', ['simctl', 'install', device.udid, appPath], { stdio: 'inherit' });
   // The app's own output: Capacitor prints the page's console there in debug builds.
@@ -52,6 +58,7 @@ if (platform === 'android') {
 const checks = [];
 const consoleErrors = [];
 let done = null;
+const started = Date.now();
 const result = await new Promise((resolve) => {
   const timer = setTimeout(() => resolve('timeout'), TIMEOUT);
   let rest = '';
@@ -60,10 +67,17 @@ const result = await new Promise((resolve) => {
     const lines = rest.split(/\r?\n/);
     rest = lines.pop();
     for (const line of lines) {
+      if (!line.trim()) continue;
+      console.log(`[${((Date.now() - started) / 1000).toFixed(1).padStart(5)} s] ${line.length > 600 ? `${line.slice(0, 600)}…` : line}`);
       const at = line.indexOf('KURGU_SMOKE_');
       if (at >= 0) {
         const [tag, ...json] = line.slice(at).split(' ');
-        const data = JSON.parse(json.join(' '));
+        let data = null;
+        try {
+          data = JSON.parse(json.join(' '));
+        } catch {
+          continue; // a cut-off line; the check counts as missing
+        }
         if (tag === 'KURGU_SMOKE_CHECK') checks.push(data);
         if (tag === 'KURGU_SMOKE_DONE') {
           done = data;
@@ -94,7 +108,7 @@ try {
 log.kill();
 if (platform === 'ios') {
   try {
-    run('xcrun', ['simctl', 'terminate', device.udid, APP_ID]);
+    run('xcrun', ['simctl', 'terminate', device.udid, APP_ID], { stdio: 'ignore' });
   } catch {
     // Already closed.
   }
