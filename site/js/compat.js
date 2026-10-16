@@ -1,6 +1,6 @@
 /*
  * Checks, on the visitor's own device, what this browser can do with the editor and says so
- * before they click: fast export (WebCodecs), which formats, saving straight to disk.
+ * before they click: fast export (WebCodecs), which formats, saving straight to disk, recording.
  * Nothing is sent anywhere.
  */
 (function (root) {
@@ -27,6 +27,7 @@
       h264: false, vp9: false, aac: false, opus: false,
       disk: typeof root.showSaveFilePicker === 'function' && root.self === root.top,
       recorder: has('MediaRecorder'),
+      capture: !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function'),
     };
     const v = async (codec) => {
       try {
@@ -57,7 +58,7 @@
     try {
       r = await check();
     } catch (err) {
-      r = { video: false, audio: false, h264: false, vp9: false, aac: false, opus: false, disk: false, recorder: false };
+      r = { video: false, audio: false, h264: false, vp9: false, aac: false, opus: false, disk: false, recorder: false, capture: false };
     }
     const fastMp4 = r.h264 && (r.aac || r.opus);
     const fastWebm = r.vp9 && r.opus;
@@ -86,6 +87,7 @@
       ['WebM · VP9 + Opus', fastWebm],
       ['Doğrudan diske kaydetme', r.disk],
       ['Gerçek zamanlı yedek kayıt', r.recorder],
+      ['Ekran ve kamera kaydı', r.capture && r.video && r.audio],
     ];
     rows.textContent = '';
     for (const [label, ok] of list) {

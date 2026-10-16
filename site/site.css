@@ -1098,6 +1098,13 @@ h3 {
   color: var(--faint);
 }
 
+.card-record {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: clamp(18px, 3vw, 44px);
+}
+
 .card-shape {
   grid-column: span 4;
   grid-row: span 2;
@@ -1235,6 +1242,94 @@ h3 {
 .sync-buttons {
   display: flex;
   gap: 8px;
+}
+
+/* Recording demo: both lanes grow together, because both are recorded on one clock. */
+
+.rec-demo-wrap {
+  display: grid;
+  gap: 14px;
+}
+
+.rec-demo {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--r-2);
+  background: var(--monitor);
+  color: var(--monitor-fg);
+}
+
+.rec-demo-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rec-demo-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--monitor-muted);
+}
+
+.rec-demo-live .rec-dot {
+  width: 8px;
+  height: 8px;
+  opacity: 0.35;
+  transition: opacity var(--t-2) var(--ease);
+}
+
+.rec-demo.is-recording .rec-demo-live {
+  color: var(--monitor-fg);
+}
+
+.rec-demo.is-recording .rec-demo-live .rec-dot {
+  opacity: 1;
+}
+
+.rec-demo-clock {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.rec-demo-lane {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.rec-demo-track {
+  height: 26px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(232, 238, 236, 0.05);
+}
+
+.rec-demo-fill {
+  display: block;
+  width: calc(var(--p, 0) * 100%);
+  height: 100%;
+  border-radius: 6px;
+  background: var(--clip-screen);
+  box-shadow: inset -2px 0 0 var(--mark);
+}
+
+.rec-demo-lane-cam .rec-demo-fill {
+  background: var(--clip-cam);
+  box-shadow: inset -2px 0 0 var(--clip-cam-line);
+}
+
+/* While the demo records, its button stops it: the dot becomes a square. */
+.btn-rec.is-stop .rec-dot {
+  border-radius: 2px;
 }
 
 /* Export demo */
@@ -2106,6 +2201,12 @@ h3 {
 
   .card-keys {
     grid-column: span 2;
+  }
+}
+
+@media (max-width: 900px) {
+  .card-record {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

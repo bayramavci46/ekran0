@@ -157,6 +157,65 @@
     render(true);
   }
 
+  // ---- Recording demo ---------------------------------------------------------------
+
+  function initRecord() {
+    const demo = KM.$('#recDemo');
+    const btn = KM.$('#recDemoBtn');
+    const label = KM.$('#recDemoLabel');
+    const status = KM.$('#recDemoStatus');
+    const text = KM.$('#recDemoText');
+    const clock = KM.$('#recDemoClock');
+    const lanes = [KM.$('#recDemoScreen'), KM.$('#recDemoCamera')];
+    const FILL_MS = 6000; // the lanes fill in six seconds…
+    const SHOWN = 180; // …while the clock shows three minutes
+    const pad = (n) => String(Math.floor(n)).padStart(2, '0');
+    let state = 'idle';
+    let raf = 0;
+
+    const show = (p) => {
+      for (const lane of lanes) lane.style.setProperty('--p', p.toFixed(4));
+      const sec = p * SHOWN;
+      clock.textContent = `${pad(sec / 60)}:${pad(sec % 60)}`;
+    };
+    const set = (next) => {
+      state = next;
+      demo.classList.toggle('is-recording', next === 'recording');
+      btn.classList.toggle('is-stop', next === 'recording');
+      if (next === 'idle') delete status.dataset.tone;
+      else status.dataset.tone = next === 'recording' ? 'bad' : 'ok';
+      text.textContent = { idle: 'Hazır', recording: 'Kaydediliyor', done: 'Editörde · kamera hizalı' }[next];
+      label.textContent = { idle: 'Örnek kaydı başlat', recording: 'Kaydı bitir', done: 'Yeniden kaydet' }[next];
+    };
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      set('done');
+      KM.toast('Örnek kayıt bitti · ekran ve kamera editöre hizalı yüklendi');
+    };
+
+    btn.addEventListener('click', () => {
+      if (state === 'recording') {
+        stop();
+        return;
+      }
+      set('recording');
+      show(0);
+      if (KM.reducedMotion()) {
+        show(0.4);
+        stop();
+        return;
+      }
+      const start = performance.now();
+      const frame = (now) => {
+        const p = Math.min(1, (now - start) / FILL_MS);
+        show(p);
+        if (p < 1) raf = requestAnimationFrame(frame);
+        else stop();
+      };
+      raf = requestAnimationFrame(frame);
+    });
+  }
+
   // ---- Export demo ------------------------------------------------------------------
 
   const ESTIMATES = {
@@ -239,6 +298,7 @@
   }
 
   KM.initFeatures = function (shapeStage) {
+    initRecord();
     initShape(shapeStage);
     initSync();
     initExport();

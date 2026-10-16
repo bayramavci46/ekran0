@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kurgu Masası</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Ekran kaydınızı ve kamera kaydınızı tarayıcıda tek videoda birleştirin: kamera penceresini sürükleyin, boyutlandırın, MP4 olarak indirin. Ücretsiz; hesap ve yükleme yok.">
+<meta name="description" content="Ekranınızı ve kameranızı aynı anda kaydedin ya da iki kaydı tarayıcıda tek videoda birleştirin: kamera penceresini sürükleyin, boyutlandırın, MP4 olarak indirin. Ücretsiz; hesap ve yükleme yok.">
 <meta name="theme-color" content="#eef1f0" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c1112" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c1112'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23f0a73a'/%3E%3C/svg%3E">
@@ -72,7 +72,7 @@
       <div class="hero-copy">
         <p class="eyebrow"><span class="bracket" aria-hidden="true">[</span>Ekran + Kamera Kurgu Masası</p>
         <h1 id="heroTitle">Ekran kaydınız ve kameranız, tek videoda.</h1>
-        <p class="lead">İki kaydı bırakın, kamera penceresini istediğiniz yere taşıyıp boyutlandırın, MP4 olarak indirin. Hepsi tarayıcınızda olur; videolarınız hiçbir sunucuya gitmez.</p>
+        <p class="lead">Ekranınızı ve kameranızı aynı anda kaydedin ya da hazır iki kaydı bırakın; kamera penceresini istediğiniz yere taşıyıp boyutlandırın, MP4 olarak indirin. Hepsi bilgisayarınızda olur; videolarınız hiçbir sunucuya gitmez.</p>
         <div class="hero-actions">
           <a class="btn btn-primary btn-lg" href="editor.html">
             Editörü aç
@@ -136,9 +136,9 @@
         <ol class="how-steps">
           <li class="how-step is-active" data-step="1">
             <span class="step-no">01</span>
-            <h3>Kayıtları bırakın</h3>
-            <p>Ekran kaydını ve kamera kaydını sayfaya sürükleyin. Telefonla çekilmiş dikey videolar da doğru yönde açılır.</p>
-            <p class="step-meta">MP4 · MOV · WebM</p>
+            <h3>Kaydedin ya da bırakın</h3>
+            <p>Ekranı ve kamerayı editörden aynı anda kaydedin; bitirince ikisi de hizalanmış olarak yüklenir. Hazır kayıtlarınız varsa sayfaya sürükleyin.</p>
+            <p class="step-meta">Ekran + kamera kaydı · MP4 · MOV · WebM</p>
           </li>
           <li class="how-step" data-step="2">
             <span class="step-no">02</span>
@@ -183,6 +183,34 @@
       </header>
 
       <div class="bento">
+        <article class="card card-record" aria-labelledby="recordTitle">
+          <div class="card-copy">
+            <h3 id="recordTitle">Ekranı ve kamerayı birlikte kaydedin.</h3>
+            <p>Editördeki Kayıt düğmesine basın, kaydedilecek ekranı ya da pencereyi seçin. Ekran ve kamera ayrı dosyalara, aynı saate göre kaydedilir; bitirdiğinizde ikisi de editöre gelir ve kamera kendiliğinden hizalanır. Kamerayı ve mikrofonu seçer, istediğinizde duraklatırsınız.</p>
+            <p class="card-meta">Bilgisayardaki güncel tarayıcılarda · masaüstü uygulamasında</p>
+          </div>
+          <div class="rec-demo-wrap">
+            <div class="rec-demo" id="recDemo" aria-hidden="true">
+              <div class="rec-demo-top">
+                <span class="rec-demo-live"><span class="rec-dot"></span>REC</span>
+                <span class="rec-demo-clock" id="recDemoClock">00:00</span>
+              </div>
+              <div class="rec-demo-lane">
+                <span class="sync-label">Ekran</span>
+                <span class="rec-demo-track"><span class="rec-demo-fill" id="recDemoScreen"></span></span>
+              </div>
+              <div class="rec-demo-lane rec-demo-lane-cam">
+                <span class="sync-label">Kamera</span>
+                <span class="rec-demo-track"><span class="rec-demo-fill" id="recDemoCamera"></span></span>
+              </div>
+            </div>
+            <div class="sync-foot">
+              <span class="status" id="recDemoStatus"><span class="status-dot" aria-hidden="true"></span><span id="recDemoText">Hazır</span></span>
+              <button class="btn btn-rec btn-sm" id="recDemoBtn" type="button"><span class="rec-dot" aria-hidden="true"></span><span id="recDemoLabel">Örnek kaydı başlat</span></button>
+            </div>
+          </div>
+        </article>
+
         <article class="card card-shape" aria-labelledby="shapeTitle">
           <div class="card-copy">
             <h3 id="shapeTitle">Kamera penceresi, tam istediğiniz gibi.</h3>
@@ -361,10 +389,11 @@
           </svg>
           <div class="dl-app-copy">
             <p class="dl-app-name">Kurgu Masası</p>
-            <p class="meta">Sürüm 1.0.0 · ücretsiz · hesap gerekmez</p>
+            <p class="meta">Sürüm 1.1.0 · ücretsiz · hesap gerekmez</p>
           </div>
           <ul class="checklist">
             <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>İnternet olmadan açılır, videolarınız bilgisayarınızdan çıkmaz</li>
+            <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Ekranı ve kamerayı birlikte kaydeder; kaydı menü çubuğundan ya da görev çubuğundan durdurursunuz</li>
             <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Hızlı dışa aktarma ve sesten otomatik senkron her bilgisayarda</li>
             <li><svg class="i i-sm" aria-hidden="true"><use href="#i-check"/></svg>Sekmeler arasında kaybolmaz, kendi penceresinde çalışır</li>
           </ul>
@@ -437,7 +466,7 @@
         </div>
         <div class="acc-item">
           <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq4" id="faq4b">Ekran ve kamera kaydını nasıl alırım?<span class="acc-icon" aria-hidden="true"></span></button></h3>
-          <div class="acc-panel" id="faq4" role="region" aria-labelledby="faq4b" hidden><div><p>Ekran için OBS, QuickTime, Windows'taki Xbox Game Bar ya da telefonunuzun ekran kaydı; kamera için web kamerası ya da telefon yeterli. İki kaydı yaklaşık aynı anda başlatın; editör onları sesten eşler. Başta bir kez el çırpmak eşlemeyi kolaylaştırır.</p></div></div>
+          <div class="acc-panel" id="faq4" role="region" aria-labelledby="faq4b" hidden><div><p>En kolayı editörün kendisiyle: üst çubuktaki <strong>Kayıt</strong> düğmesine basın, kamerayı ve mikrofonu seçin, sonra kaydedilecek ekranı ya da pencereyi seçin. Ekran ve kamera ayrı dosyalara, aynı saate göre kaydedilir; bitirince ikisi de hizalanmış olarak editöre yüklenir. Bu, bilgisayardaki güncel tarayıcılarda (en iyi Chrome ve Edge'de) ve masaüstü uygulamasında çalışır; sayfanın başındaki tarayıcı kontrolü sizinkinde olup olmadığını gösterir. Telefonlarda tarayıcılar ekran kaydına izin vermez. Başka bir programla (OBS, QuickTime, telefonunuz) kaydettiyseniz dosyaları bırakmanız yeterli; editör onları sesten eşler. Başta bir kez el çırpmak eşlemeyi kolaylaştırır.</p></div></div>
         </div>
         <div class="acc-item">
           <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq7" id="faq7b">Otomatik senkron nasıl çalışır?<span class="acc-icon" aria-hidden="true"></span></button></h3>
@@ -449,7 +478,7 @@
         </div>
         <div class="acc-item">
           <h3><button class="acc-btn" type="button" aria-expanded="false" aria-controls="faq6" id="faq6b">Uzun kayıtlarda sorun olur mu?<span class="acc-icon" aria-hidden="true"></span></button></h3>
-          <div class="acc-panel" id="faq6" role="region" aria-labelledby="faq6b" hidden><div><p>Chrome ve Edge'de dosya doğrudan diske yazıldığı için uzun kayıtlar da sorunsuz çıkar. Diğer tarayıcılarda video bellekte tutulur; bir saati aşan kayıtları bölüm bölüm dışa aktarmak daha güvenlidir.</p></div></div>
+          <div class="acc-panel" id="faq6" role="region" aria-labelledby="faq6b" hidden><div><p>Chrome ve Edge'de dışa aktarılan dosya doğrudan diske yazıldığı için uzun kayıtlar da sorunsuz çıkar. Diğer tarayıcılarda video bellekte tutulur; bir saati aşan kayıtları bölüm bölüm dışa aktarmak daha güvenlidir. Editörde yaptığınız ekran ve kamera kayıtları da kaydedilirken diske yazılır; tarayıcının bunu desteklemediği durumlarda kayıt panelinde uyarı görürsünüz.</p></div></div>
         </div>
       </div>
     </div>
