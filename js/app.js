@@ -1090,6 +1090,20 @@
     return downloadsCapability;
   }
 
+  /**
+   * On phones and tablets the browser can hand the video to the share sheet too (Save Video puts
+   * it in Photos on iPhone); returns the file to share, or null where downloading is the norm.
+   */
+  function sharableFile(blob, name) {
+    if (PE.native || typeof navigator.canShare !== 'function' || !matchMedia('(pointer: coarse)').matches) return null;
+    const file = new File([blob], name, { type: blob.type || 'video/mp4' });
+    try {
+      return navigator.canShare({ files: [file] }) ? file : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
   async function showResult(blob, name, onDisk) {
     const url = URL.createObjectURL(blob);
     state.result = { blob, name, url, onDisk };
@@ -1101,10 +1115,11 @@
     else els.resultText.append(strong, ` hazır (${U.bytes(blob.size)}).`);
     els.result.hidden = false;
     els.result.scrollIntoView({ block: 'nearest', behavior: KM.reducedMotion() ? 'auto' : 'smooth' });
-    // In the phone app the video is handed to the share sheet: Save Video, Files, Drive…
-    els.download.textContent = PE.native ? 'Kaydet ya da paylaş' : 'İndir';
+    // In the phone app (and on phones) the video is handed to the share sheet: Save Video, Files, Drive…
+    const shares = !!PE.native || !!sharableFile(blob, name);
+    els.download.textContent = shares ? 'Kaydet ya da paylaş' : 'İndir';
     KM.toast(onDisk ? `Kaydedildi · ${name}, ${U.bytes(blob.size)}` : `Video hazır · ${name}, ${U.bytes(blob.size)}`, {
-      action: PE.native ? { label: 'Kaydet', onClick: download } : null,
+      action: shares ? { label: 'Kaydet', onClick: download } : null,
     });
     const downloads = onDisk ? false : await getDownloads();
     els.download.hidden = onDisk || downloads === null;
@@ -1134,6 +1149,17 @@
     if (PE.native) {
       await shareNative(r.blob, r.name, els.download);
       return;
+    }
+    // Before anything else waits: the share sheet only opens straight from a tap.
+    const file = sharableFile(r.blob, r.name);
+    if (file) {
+      try {
+        await navigator.share({ files: [file], title: r.name });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        // Sharing was refused; download instead.
+      }
     }
     const downloads = await getDownloads();
     if (downloads) {
