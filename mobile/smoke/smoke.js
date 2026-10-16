@@ -2,10 +2,10 @@
  * In-app check that the CI runs in the Android emulator and the iOS simulator (only builds made
  * with `node scripts/copy-app.mjs --smoke` contain it). It opens two test videos that hear the
  * same sound 1.5 s apart (the camera one turned like a phone video), waits for the automatic
- * sync, tries the parts of the fast export one by one (decoding, encoding the picture and the
- * sound, writing to private storage), exports two seconds the way the Export button does, and
- * copies the result where the share sheet takes it from. Every step has a time limit, so a part
- * that hangs is named, with how far it came, instead of stopping the check.
+ * sync, checks the private storage the export writes to, exports two seconds the way the Export
+ * button does (with the codecs the editor's own encoder trial picked), and copies the result
+ * where the share sheet takes it from. Every step has a time limit, so a step that hangs is
+ * named, with how far it came, instead of stopping the check.
  *
  * Each check is printed to the console, which the app writes to its log, and a last line says
  * whether all passed:
@@ -57,116 +57,6 @@
     }
   };
 
-  // WebCodecs names for the codecs the export plan picks.
-  const VIDEO = { avc: 'avc1.64001f', hevc: 'hvc1.1.6.L93.B0', vp9: 'vp09.00.31.08', vp8: 'vp8', av1: 'av01.0.04M.08' };
-  const AUDIO = { aac: 'mp4a.40.2', opus: 'opus' };
-
-  /** WebCodecs on their own, without the export around them. */
-  const probes = (MB, file, plan, size) => [
-    ['decodes video', 45, async (notes) => {
-      const input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
-      try {
-        const track = await input.getPrimaryVideoTrack();
-        const config = await track.getDecoderConfig();
-        Object.assign(notes, { codec: config.codec, sent: 0, frames: 0, dequeued: 0 });
-        notes.supported = (await VideoDecoder.isConfigSupported(config)).supported;
-        const decoder = new VideoDecoder({
-          output: (frame) => { notes.frames++; frame.close(); },
-          error: (err) => { notes.failed = message(err); },
-        });
-        decoder.addEventListener('dequeue', () => notes.dequeued++);
-        decoder.configure(config);
-        for await (const packet of new MB.EncodedPacketSink(track).packets()) {
-          decoder.decode(packet.toEncodedVideoChunk());
-          notes.sent++;
-          notes.queue = decoder.decodeQueueSize;
-          if (notes.sent === 30) break;
-        }
-        await decoder.flush();
-        decoder.close();
-        return notes.frames > 0 && !notes.failed;
-      } finally {
-        input.dispose();
-      }
-    }],
-    ['encodes video', 45, async (notes) => {
-      const config = {
-        codec: VIDEO[plan.videoCodec], width: size.width, height: size.height, bitrate: 2e6, framerate: 30,
-        hardwareAcceleration: plan.videoAcceleration,
-      };
-      if (plan.videoCodec === 'avc') config.avc = { format: 'avc' };
-      Object.assign(notes, { codec: config.codec, acceleration: config.hardwareAcceleration, sent: 0, chunks: 0, dequeued: 0, queue: 0 });
-      notes.supported = (await VideoEncoder.isConfigSupported(config)).supported;
-      const encoder = new VideoEncoder({
-        output: () => notes.chunks++,
-        error: (err) => { notes.failed = message(err); },
-      });
-      encoder.addEventListener('dequeue', () => notes.dequeued++);
-      encoder.configure(config);
-      const canvas = document.createElement('canvas');
-      canvas.width = size.width;
-      canvas.height = size.height;
-      const ctx = canvas.getContext('2d');
-      for (let i = 0; i < 30; i++) {
-        ctx.fillStyle = `hsl(${i * 12} 70% 50%)`;
-        ctx.fillRect(0, 0, size.width, size.height);
-        const frame = new VideoFrame(canvas, { timestamp: Math.round((i * 1e6) / 30), duration: Math.round(1e6 / 30) });
-        encoder.encode(frame, { keyFrame: i === 0 });
-        frame.close();
-        notes.sent++;
-        notes.queue = Math.max(notes.queue, encoder.encodeQueueSize);
-        await wait(0);
-      }
-      await encoder.flush();
-      encoder.close();
-      return notes.chunks > 0 && !notes.failed;
-    }],
-    ['encodes sound', 45, async (notes) => {
-      if (!plan.audioCodec) return true;
-      const rate = 48000;
-      const config = { codec: AUDIO[plan.audioCodec], sampleRate: rate, numberOfChannels: 2, bitrate: 128000 };
-      Object.assign(notes, { codec: config.codec, sent: 0, chunks: 0, dequeued: 0, queue: 0 });
-      notes.supported = (await AudioEncoder.isConfigSupported(config)).supported;
-      const encoder = new AudioEncoder({
-        output: () => notes.chunks++,
-        error: (err) => { notes.failed = message(err); },
-      });
-      encoder.addEventListener('dequeue', () => notes.dequeued++);
-      encoder.configure(config);
-      const n = 2048;
-      for (let i = 0; i < 24; i++) {
-        const data = new Float32Array(n * 2);
-        for (let j = 0; j < n; j++) data[j] = data[n + j] = 0.2 * Math.sin((2 * Math.PI * 440 * (i * n + j)) / rate);
-        const audio = new AudioData({
-          format: 'f32-planar', sampleRate: rate, numberOfFrames: n, numberOfChannels: 2,
-          timestamp: Math.round((i * n * 1e6) / rate), data,
-        });
-        encoder.encode(audio);
-        audio.close();
-        notes.sent++;
-        notes.queue = Math.max(notes.queue, encoder.encodeQueueSize);
-        await wait(0);
-      }
-      await encoder.flush();
-      encoder.close();
-      return notes.chunks > 0 && !notes.failed;
-    }],
-    ['writes to private storage', 30, async (notes) => {
-      const target = await PE.exporter.privateTarget('deneme.bin');
-      notes.available = !!target;
-      if (!target) return true; // the export then keeps the video in memory
-      const writer = target.writable.getWriter();
-      await writer.write({ type: 'write', position: 0, data: new Uint8Array(3 << 20) });
-      await writer.write({ type: 'write', position: 1024, data: new Uint8Array(16).fill(7) });
-      notes.written = true;
-      await writer.close();
-      const file = await target.finish('application/octet-stream');
-      const head = new Uint8Array(await file.slice(1024, 1040).arrayBuffer());
-      notes.bytes = file.size;
-      return file.size === 3 << 20 && head.every((b) => b === 7);
-    }],
-  ];
-
   const PE = window.PipEditor;
   try {
     check('editor loaded', PE && PE.app && PE.exporter && window.KM);
@@ -204,9 +94,20 @@
       size: `${job.output.width}x${job.output.height}`, formats: formats.map((f) => f.label), reasons: plan.reasons,
     });
     const MB = await PE.exporter.getMediabunny();
-    if (plan.method === 'fast') {
-      for (const [name, limit, fn] of probes(MB, screen.file, plan, job.output)) await step(name, limit, fn);
-    }
+    // Where the export writes, so long videos need not fit in memory.
+    await step('writes to private storage', 30, async (notes) => {
+      const target = await PE.exporter.privateTarget('deneme.bin');
+      notes.available = !!target;
+      if (!target) return true; // the export then keeps the video in memory
+      const writer = target.writable.getWriter();
+      await writer.write({ type: 'write', position: 0, data: new Uint8Array(3 << 20) });
+      await writer.write({ type: 'write', position: 1024, data: new Uint8Array(16).fill(7) });
+      await writer.close();
+      const file = await target.finish('application/octet-stream');
+      const head = new Uint8Array(await file.slice(1024, 1040).arrayBuffer());
+      notes.bytes = file.size;
+      return file.size === 3 << 20 && head.every((b) => b === 7);
+    });
 
     let blob = null;
     const controller = new AbortController();
